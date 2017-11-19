@@ -56,6 +56,12 @@ pub enum Frozenness {
     Unfrozen,
 }
 
+impl Default for Frozenness {
+    fn default() -> Frozenness {
+        Frozenness::Unfrozen
+    }
+}
+
 #[derive(Debug,Clone,PartialEq,Eq,Hash)]
 pub struct Identifier {
     id: String,
@@ -66,5 +72,11 @@ impl<S: Into<String>> From<S> for Identifier {
         Identifier {
             id: id.into(),
         }
+    }
+}
+
+impl fmt::Display for Identifier {
+    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&self.id, fmtr)
     }
 }

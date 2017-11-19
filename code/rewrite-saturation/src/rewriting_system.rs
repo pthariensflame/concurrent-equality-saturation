@@ -1,7 +1,8 @@
+//! The types in this module assume all identifiers used are (scope-)unique.
+
 use super::*;
 
-/// This assumes all identifiers used are (scope-)unique.
-#[derive(Debug,Clone,PartialEq,Eq,Hash)]
+#[derive(Debug,Clone,PartialEq,Eq,Hash,Default)]
 pub struct RewritingSystem {
     pub types: Vec<Type>,
     pub ops: Vec<Operation>,

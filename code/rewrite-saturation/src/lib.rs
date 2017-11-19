@@ -5,3 +5,5 @@ use itertools::{Either, Itertools, PeekingNext};
 use petgraph::prelude::*;
 
 pub mod rewriting_system;
+
+pub mod peg;

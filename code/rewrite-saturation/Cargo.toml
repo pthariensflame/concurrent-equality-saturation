@@ -7,3 +7,6 @@ authors = ["Adithya Murali <adithya5@illinois.edu>",
 
 [dependencies]
 itertools = "^0.7.2"
+petgraph = "^0.4.10"
+quickcheck = "^0.4.1"
+quickcheck_derive = "^0.1.0"

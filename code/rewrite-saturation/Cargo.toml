@@ -1,0 +1,9 @@
+[package]
+name = "rewrite-saturation"
+version = "0.0.0"
+authors = ["Adithya Murali <adithya5@illinois.edu>",
+           "Alexander Altman <altman3@illinois.edu>",
+           "Remy Goldschmidt <regolds2@illinois.edu>"]
+
+[dependencies]
+itertools = "^0.7.2"

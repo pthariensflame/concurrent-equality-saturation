@@ -2,7 +2,7 @@
 
 use super::*;
 
-#[derive(Debug,Clone,PartialEq,Eq,Hash,Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct RewritingSystem {
     pub types: Vec<Type>,
     pub ops: Vec<Operation>,
@@ -10,12 +10,12 @@ pub struct RewritingSystem {
     pub rls: Vec<Rule>,
 }
 
-#[derive(Debug,Clone,PartialEq,Eq,Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Type {
     pub name: Identifier,
 }
 
-#[derive(Debug,Clone,PartialEq,Eq,Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Operation {
     pub name: Identifier,
     pub args: Vec<Type>,
@@ -23,7 +23,7 @@ pub struct Operation {
     pub frozenness: Frozenness,
 }
 
-#[derive(Debug,Clone,PartialEq,Eq,Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Equation {
     pub quantified_variables: Vec<Identifier>, // scoped
     pub left: Term, // with scope
@@ -31,7 +31,7 @@ pub struct Equation {
     pub conditions: Vec<Either<Equation, Rule>>, // with scope
 }
 
-#[derive(Debug,Clone,PartialEq,Eq,Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Rule {
     pub name: Option<Identifier>,
     pub quantified_variables: Vec<Identifier>, // scoped
@@ -40,7 +40,7 @@ pub struct Rule {
     pub conditions: Vec<Either<Equation, Rule>>, // with scope
 }
 
-#[derive(Debug,Clone,PartialEq,Eq,Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Term {
     Op {
         head: Identifier, // of an `Operation`
@@ -51,7 +51,7 @@ pub enum Term {
     }
 }
 
-#[derive(Debug,Clone,Copy,PartialEq,Eq,Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Frozenness {
     Frozen,
     Unfrozen,
@@ -63,7 +63,7 @@ impl Default for Frozenness {
     }
 }
 
-#[derive(Debug,Clone,PartialEq,Eq,Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Identifier {
     id: String,
 }

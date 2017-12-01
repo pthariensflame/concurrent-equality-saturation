@@ -25,18 +25,18 @@ pub struct Operation {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Equation {
-    pub quantified_variables: Vec<Identifier>, // scoped
-    pub left: Term, // with scope
-    pub right: Term, // with scope
+    pub quantified_variables: Vec<Identifier>,   // scoped
+    pub left: Term,                              // with scope
+    pub right: Term,                             // with scope
     pub conditions: Vec<Either<Equation, Rule>>, // with scope
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Rule {
     pub name: Option<Identifier>,
-    pub quantified_variables: Vec<Identifier>, // scoped
-    pub source: Term, // with scope
-    pub target: Term, // with scope
+    pub quantified_variables: Vec<Identifier>,   // scoped
+    pub source: Term,                            // with scope
+    pub target: Term,                            // with scope
     pub conditions: Vec<Either<Equation, Rule>>, // with scope
 }
 
@@ -48,7 +48,7 @@ pub enum Term {
     },
     Var {
         name: Identifier, // of a variable in scope
-    }
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -70,9 +70,7 @@ pub struct Identifier {
 
 impl<S: Into<String>> From<S> for Identifier {
     fn from(id: S) -> Identifier {
-        Identifier {
-            id: id.into(),
-        }
+        Identifier { id: id.into() }
     }
 }
 

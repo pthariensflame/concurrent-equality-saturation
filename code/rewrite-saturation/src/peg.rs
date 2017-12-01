@@ -21,7 +21,7 @@ impl fmt::Display for Name {
     }
 }
 
-pub fn mk_name<X: ToString>(value: X) -> Name {
+pub fn mk_name<X: ToString>(value: &X) -> Name {
     Name(value.to_string())
 }
 

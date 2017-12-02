@@ -1,25 +1,26 @@
-//! The types in this module assume all identifiers used are (scope-)unique.
+//! The sorts in this module assume all identifiers used are (scope-)unique.
 
 use super::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct RewritingSystem {
-    pub types: Vec<Type>,
+    pub sorts: Vec<Sort>,
     pub ops: Vec<Operation>,
     pub eqs: Vec<Equation>,
     pub rls: Vec<Rule>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Type {
+pub struct Sort {
     pub name: Identifier,
+    pub supersorts: Vec<Sort>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Operation {
     pub name: Identifier,
-    pub args: Vec<Type>,
-    pub result: Type,
+    pub args: Vec<Identifier>,
+    pub result: Sort,
     pub frozenness: Frozenness,
 }
 

@@ -1,4 +1,4 @@
-//! The sorts in this module assume all identifiers used are (scope-)unique.
+//! The types in this module assume all identifiers used are (scope-)unique.
 
 use super::*;
 

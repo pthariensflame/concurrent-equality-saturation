@@ -1,6 +1,7 @@
 //! The types in this module assume all identifiers used are (scope-)unique.
 
-use super::*;
+use std::fmt;
+use itertools::Either;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct RewritingSystem {
@@ -19,8 +20,8 @@ pub struct Sort {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Operation {
     pub name: Identifier,
-    pub args: Vec<Identifier>,
-    pub result: Sort,
+    pub arg_sorts: Vec<Identifier>,
+    pub result_sort: Identifier,
     pub frozenness: Frozenness,
 }
 

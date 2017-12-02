@@ -1,5 +1,3 @@
-//! The types in this module assume all identifiers used are (scope-)unique.
-
 use std::fmt;
 use itertools::Either;
 

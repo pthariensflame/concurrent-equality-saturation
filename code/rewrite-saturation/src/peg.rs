@@ -19,6 +19,7 @@ pub enum NodeForm {
 pub struct PEG {
     pub original_system: rewriting_system::RewritingSystem,
     pub graph: StableDiGraph<NodeForm, ()>,
+    pub system_node: NodeIndex,
 }
 
 #[derive(Debug, Clone)]

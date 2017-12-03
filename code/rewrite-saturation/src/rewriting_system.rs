@@ -1,5 +1,4 @@
 use std::fmt;
-use itertools::Either;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct RewritingSystem {
@@ -25,19 +24,17 @@ pub struct Operation {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Equation {
-    pub quantified_variables: Vec<Identifier>,   // scoped
-    pub left: Term,                              // with scope
-    pub right: Term,                             // with scope
-    pub conditions: Vec<Either<Equation, Rule>>, // with scope
+    pub quantified_variables: Vec<Identifier>, // scoped
+    pub left: Term,                            // with scope
+    pub right: Term,                           // with scope
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Rule {
     pub name: Option<Identifier>,
-    pub quantified_variables: Vec<Identifier>,   // scoped
-    pub source: Term,                            // with scope
-    pub target: Term,                            // with scope
-    pub conditions: Vec<Either<Equation, Rule>>, // with scope
+    pub quantified_variables: Vec<Identifier>, // scoped
+    pub source: Term,                          // with scope
+    pub target: Term,                          // with scope
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

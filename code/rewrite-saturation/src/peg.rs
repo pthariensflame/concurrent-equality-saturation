@@ -13,8 +13,7 @@ pub enum NodeForm {
         source: NodeIndex,                     // with scope
         target: NodeIndex,                     // with scope
     },
-    Composition, // of rules
-    Identity(Identifier), // rule; identifier is sort
+    Composition, // of rules; manifested lazily
 }
 
 #[derive(Debug, Clone)]
@@ -41,22 +40,30 @@ pub type Substitution = BTreeMap<MetaIdent, NodeIndex>;
 
 pub struct Analysis {
     trigger: Trigger,
-    callback: Box<Fn(&mut EPEG, Substitution) + 'static>,
+    callback: Box<Fn(&mut EPEG, NodeIndex, Substitution) -> bool + 'static>,
 }
 
 impl EPEG {
     pub fn saturate<Analyses>(&mut self, anas: Analyses)
     where
-        Analyses: IntoIterator<Item = Analysis>,
+        Analyses: IntoIterator + Clone,
+        Analyses::Item: Into<Analysis>,
     {
-        for ana in anas {
-            for subst in self.match_substs(ana.trigger) {
-                (ana.callback)(self, subst);
+        let mut changed = true; // have to start the loop somewhere
+        while !changed {
+            changed = false;
+            let ixes: Vec<_> = self.peg.graph.node_indices().collect();
+            for ix in ixes {
+                for ana in anas.clone().into_iter().map(|x| x.into()) {
+                    for subst in self.unify_with_node(ix, ana.trigger) {
+                        changed |= (ana.callback)(self, ix, subst);
+                    }
+                }
             }
         }
     }
 
-    pub fn match_substs(&self, trig: Trigger) -> HashSet<Substitution> {
+    pub fn unify_with_node(&self, ix: NodeIndex, trig: Trigger) -> HashSet<Substitution> {
         match trig {
             Trigger::Term(term) => unimplemented!(),
             Trigger::Subsystem(sys) => unimplemented!(),

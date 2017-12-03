@@ -72,12 +72,8 @@ impl Default for Frozenness {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum IdentifierImpl {
-    String {
-        id: String,
-    },
-    UniqueID {
-        id: ProcessUniqueId,
-    }
+    String { id: String },
+    UniqueID { id: ProcessUniqueId },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -91,7 +87,9 @@ impl<S: Into<String>> From<S> for Identifier {
 
 impl Identifier {
     pub fn new_unique() -> Self {
-        Identifier(IdentifierImpl::UniqueID { id: ProcessUniqueId::new() })
+        Identifier(IdentifierImpl::UniqueID {
+            id: ProcessUniqueId::new(),
+        })
     }
 }
 

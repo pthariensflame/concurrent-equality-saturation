@@ -97,7 +97,10 @@ impl fmt::Display for Identifier {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
             IdentifierImpl::String { ref id } => fmt::Display::fmt(id, fmtr),
-            IdentifierImpl::UniqueID { ref id } => fmt::Display::fmt(id, fmtr),
+            IdentifierImpl::UniqueID { ref id } => {
+                fmtr.write_str("~generated:")?;
+                fmt::Display::fmt(id, fmtr)
+            }
         }
     }
 }

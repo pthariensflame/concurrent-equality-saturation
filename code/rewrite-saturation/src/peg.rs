@@ -50,7 +50,7 @@ impl EPEG {
         Analyses::Item: Into<Analysis>,
     {
         let mut changed = true; // have to start the loop somewhere
-        while !changed {
+        while changed {
             changed = false;
             let ixes: Vec<_> = self.peg.graph.node_indices().collect();
             for ix in ixes {

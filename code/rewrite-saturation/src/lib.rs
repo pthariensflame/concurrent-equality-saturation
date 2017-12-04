@@ -9,13 +9,25 @@ use std::fmt;
 pub enum Void {}
 
 impl Void {
-    fn absurd(self) -> ! {
-        match self {}
+    fn absurd(&self) -> ! {
+        match *self {}
     }
 }
 
 impl fmt::Display for Void {
     fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
+        self.absurd()
+    }
+}
+
+impl<A: ?Sized> AsRef<A> for Void {
+    fn as_ref(&self) -> &A {
+        self.absurd()
+    }
+}
+
+impl<A: ?Sized> AsMut<A> for Void {
+    fn as_mut(&mut self) -> &mut A {
         self.absurd()
     }
 }

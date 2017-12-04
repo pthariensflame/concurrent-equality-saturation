@@ -44,7 +44,7 @@ pub struct Analysis {
 }
 
 impl EPEG {
-    pub fn saturate<Analyses>(&mut self, anas: Analyses)
+    pub fn saturate<Analyses>(&mut self, anas: &Analyses)
     where
         Analyses: IntoIterator + Clone,
         Analyses::Item: Into<Analysis>,

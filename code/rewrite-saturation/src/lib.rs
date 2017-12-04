@@ -24,4 +24,4 @@ pub mod rewriting_system;
 
 pub mod peg;
 
-pub mod simple_peg;
+// pub mod simple_peg;

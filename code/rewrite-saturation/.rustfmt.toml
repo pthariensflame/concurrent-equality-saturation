@@ -1,0 +1,6 @@
+# Run `rustfmt --config-help` to see more options.
+
+max_width          = 100
+ideal_width        = 80
+normalize_comments = true
+wrap_comments      = true

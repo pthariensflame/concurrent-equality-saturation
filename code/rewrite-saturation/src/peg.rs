@@ -10,8 +10,8 @@ pub enum NodeForm {
     Rule {
         name: Option<Identifier>,
         quantified_variables: Vec<Identifier>, // scoped
-        source: NodeIndex,                     // with scope
-        target: NodeIndex,                     // with scope
+        source: NodeIndex, // with scope
+        target: NodeIndex, // with scope
     },
     Composition, // of rules; manifested lazily
 }
@@ -65,8 +65,12 @@ impl EPEG {
 
     pub fn unify_with_node(&self, ix: NodeIndex, trig: Trigger) -> HashSet<Substitution> {
         match trig {
-            Trigger::Term(term) => unimplemented!(),
-            Trigger::Subsystem(sys) => unimplemented!(),
+            Trigger::Term(term) => {
+                unimplemented!()
+            },
+            Trigger::Subsystem(sys) => {
+                unimplemented!()
+            },
         }
     }
 }

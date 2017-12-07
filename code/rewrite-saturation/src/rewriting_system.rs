@@ -27,17 +27,17 @@ pub struct Operation {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Equation {
     pub quantified_variables: Vec<Identifier>, // scoped
-    pub left: Term,                            // with scope
-    pub right: Term,                           // with scope
+    pub left: Term, // with scope
+    pub right: Term, // with scope
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GenRule<Meta> {
     pub name: Option<Identifier>,
     pub quantified_variables: Vec<Identifier>, // scoped
-    pub quantified_metavariables: Vec<Meta>,   // scoped
-    pub source: GenTerm<Meta>,                 // with scope
-    pub target: GenTerm<Meta>,                 // with scope
+    pub quantified_metavariables: Vec<Meta>, // scoped
+    pub source: GenTerm<Meta>, // with scope
+    pub target: GenTerm<Meta>, // with scope
 }
 
 pub type Rule = GenRule<Void>;
@@ -48,12 +48,8 @@ pub enum GenTerm<Meta> {
         head: Identifier, // of an `Operation`
         args: Vec<GenTerm<Meta>>,
     },
-    Var {
-        name: Identifier, // of a variable in scope
-    },
-    MetaVar {
-        id: Meta, // of a metavariable in scope
-    },
+    Var { name: Identifier, // of a variable in scope },
+    MetaVar { id: Meta, // of a metavariable in scope },
 }
 
 pub type Term = GenTerm<Void>;
@@ -87,9 +83,7 @@ impl<S: Into<String>> From<S> for Identifier {
 
 impl Identifier {
     pub fn new_unique() -> Self {
-        Identifier(IdentifierImpl::UniqueID {
-            id: ProcessUniqueId::new(),
-        })
+        Identifier(IdentifierImpl::UniqueID { id: ProcessUniqueId::new() })
     }
 }
 

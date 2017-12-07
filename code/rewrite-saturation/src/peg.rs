@@ -3,17 +3,31 @@ use petgraph::prelude::*;
 use super::rewriting_system;
 pub use self::rewriting_system::Identifier;
 
+/// FIXME: doc
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum NodeForm {
+    /// FIXME: doc
     System,
-    Operation(usize), // index into the original Vec
-    Rule {
-        name: Option<Identifier>,
-        quantified_variables: Vec<Identifier>, // scoped
-        source: NodeIndex, // with scope
-        target: NodeIndex, // with scope
+    /// FIXME: doc
+    Operation {
+        /// FIXME: doc
+        /// index into the original Vec
+        index: usize,
     },
-    Composition, // of rules; manifested lazily
+    /// FIXME: doc
+    Rule {
+        /// The label of this rule.
+        label: Option<Identifier>,
+        /// The variables quantified in the source and target nodes.
+        quantified_variables: Vec<Identifier>,
+        // FIXME: why are these necessary?
+        // /// A pointer to the source node.
+        // source: NodeIndex,
+        // /// A pointer to the target node.
+        // target: NodeIndex,
+    },
+    /// A node representing composition of rules; these are manifested lazily.
+    Composition,
 }
 
 #[derive(Debug, Clone)]
@@ -65,8 +79,12 @@ impl EPEG {
 
     pub fn unify_with_node(&self, ix: NodeIndex, trig: Trigger) -> HashSet<Substitution> {
         match trig {
-            Trigger::Term(term) => unimplemented!(),
-            Trigger::Subsystem(sys) => unimplemented!(),
+            Trigger::Term(term) => {
+                unimplemented!()
+            },
+            Trigger::Subsystem(sys) => {
+                unimplemented!()
+            },
         }
     }
 }

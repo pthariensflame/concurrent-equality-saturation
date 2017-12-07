@@ -65,12 +65,8 @@ impl EPEG {
 
     pub fn unify_with_node(&self, ix: NodeIndex, trig: Trigger) -> HashSet<Substitution> {
         match trig {
-            Trigger::Term(term) => {
-                unimplemented!()
-            },
-            Trigger::Subsystem(sys) => {
-                unimplemented!()
-            },
+            Trigger::Term(term) => unimplemented!(),
+            Trigger::Subsystem(sys) => unimplemented!(),
         }
     }
 }

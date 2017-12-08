@@ -1,7 +1,7 @@
 use std::collections::*;
 use petgraph::prelude::*;
-use super::rewriting_system;
-pub use self::rewriting_system::Identifier;
+use super::rewriting_system as rs;
+pub use self::rs::Identifier;
 
 /// FIXME: doc
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -9,18 +9,12 @@ pub enum NodeForm {
     /// FIXME: doc
     System,
     /// FIXME: doc
-    Operation {
-        /// FIXME: doc
-        /// index into the original Vec
-        index: usize,
-    },
-    /// FIXME: doc
     Rule {
         /// The label of this rule.
         label: Option<Identifier>,
         /// The variables quantified in the source and target nodes.
         quantified_variables: Vec<Identifier>,
-        // FIXME: why are these necessary?
+        // FIXME: I don't think these are necessary?
         // /// A pointer to the source node.
         // source: NodeIndex,
         // /// A pointer to the target node.
@@ -28,11 +22,22 @@ pub enum NodeForm {
     },
     /// A node representing composition of rules; these are manifested lazily.
     Composition,
+    /// FIXME: doc
+    Operation {
+        /// FIXME: doc
+        /// index into the original Vec
+        index: usize,
+    },
+    /// FIXME: doc
+    Var {
+        /// FIXME: doc
+        name: Identifier,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub struct PEG {
-    pub original_system: rewriting_system::RewritingSystem,
+    pub original_system: rs::RewritingSystem,
     pub graph: DiGraph<NodeForm, Option<usize>>,
 }
 
@@ -46,8 +51,8 @@ pub type MetaIdent = Identifier;
 
 #[derive(Debug, Clone)]
 pub enum Trigger {
-    Term(rewriting_system::GenTerm<MetaIdent>),
-    Subsystem(HashSet<rewriting_system::GenRule<MetaIdent>>),
+    Term(rs::GenTerm<MetaIdent>),
+    Subsystem(HashSet<rs::GenRule<MetaIdent>>),
 }
 
 pub type Substitution = BTreeMap<MetaIdent, NodeIndex>;
@@ -77,14 +82,61 @@ impl EPEG {
         }
     }
 
-    pub fn unify_with_node(&self, ix: NodeIndex, trig: Trigger) -> HashSet<Substitution> {
-        match trig {
-            Trigger::Term(term) => {
-                unimplemented!()
+    fn unify_term(&self, subst: &mut Option<Substitution>, ix: NodeIndex, pat: rs::GenTerm<MetaIdent>) {
+        let g = &self.peg.graph;
+        let data = &g[ix];
+
+        match pat {
+            rs::GenTerm::Op { head, args } => {
+                if let NodeForm::Operation { index } = *data {
+                    let mut child_edge_map: BTreeMap<usize, NodeIndex> = BTreeMap::new();
+                    for edge in g.edges_directed(ix, Direction::Outgoing) {
+                        if let Some(w) = *edge.weight() {
+                            child_edge_map.insert(w, edge.target());
+                        } else {
+                            *subst = None;
+                            return;
+                        }
+                    }
+
+                    let ref name = self.peg.original_system.ops[index].name;
+                    if *name == head {
+                        for (i, arg) in args.iter().enumerate() {
+                            if let Some(target) = child_edge_map.get(&i) {
+                                self.unify_term(subst, *target, arg.clone());
+                            }
+                        }
+                    } else {
+                        *subst = None;
+                    }
+                }
             },
-            Trigger::Subsystem(sys) => {
-                unimplemented!()
+            rs::GenTerm::Var { name } => {
+                if let Some(ref mut s) = *subst {
+                    s.insert(name, ix);
+                }
             },
         }
+    }
+
+    fn unify_subsystem(&self, substs: &mut HashSet<Substitution>, ix: NodeIndex, pat: HashSet<rs::GenRule<MetaIdent>>) {
+        unimplemented!()
+    }
+
+    pub fn unify_with_node(&self, ix: NodeIndex, trig: Trigger) -> HashSet<Substitution> {
+        let mut result = HashSet::new();
+        match trig {
+            Trigger::Term(term) => {
+                let mut subst = Some(BTreeMap::new());
+                self.unify_term(&mut subst, ix, term);
+                if let Some(s) = subst {
+                    result.insert(s);
+                }
+            },
+            Trigger::Subsystem(subsystem) => {
+                self.unify_subsystem(&mut result, ix, subsystem);
+            },
+        }
+        return result;
     }
 }

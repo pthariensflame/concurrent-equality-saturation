@@ -55,58 +55,51 @@ pub struct Equation {
 /// If the type of metavariables given as an argument to this type has no
 /// inhabitants, then this represents the type of closed rules.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct GenRule<Meta> {
+pub struct GenRule<Var> {
     /// The label associated with this rule, if any.
     pub label: Option<Identifier>,
     /// A list of variables used on either side of this rule.
-    pub quantified_variables: BTreeSet<Identifier>,
-    /// A list of metavariables used on either side of this rule.
-    pub quantified_metavariables: BTreeSet<Meta>,
+    pub quantified: BTreeSet<Var>,
     /// The left-hand-side of this rewrite rule.
-    pub source: GenTerm<Meta>,
+    pub source: GenTerm<Var>,
     /// The right-hand-side of this rewrite rule.
-    pub target: GenTerm<Meta>,
+    pub target: GenTerm<Var>,
 }
 
-impl<Meta> GenRule<Meta> {
+impl<Var> GenRule<Var> {
     /// FIXME: doc
     pub fn new(
         label: Option<Identifier>,
-        source: GenTerm<Meta>,
-        target: GenTerm<Meta>,
-    ) -> GenRule<Meta>
+        source: GenTerm<Var>,
+        target: GenTerm<Var>,
+    ) -> GenRule<Var>
     where
-        Meta: Ord + Clone,
+        Var: Ord + Clone,
     {
-        fn traverse<M>(term: &GenTerm<M>, qvs: &mut BTreeSet<Identifier>, qmvs: &mut BTreeSet<M>)
+        fn traverse<V>(term: &GenTerm<V>, qvs: &mut BTreeSet<V>)
         where
-            M: Ord + Clone,
+            V: Ord + Clone,
         {
             match *term {
                 GenTerm::Op { ref head, ref args } => {
                     for a in args {
-                        traverse(a, qvs, qmvs);
+                        traverse(a, qvs);
                     }
                 }
                 GenTerm::Var { ref name } => {
                     qvs.insert(name.clone());
                 }
-                GenTerm::MetaVar { ref id } => {
-                    qmvs.insert(id.clone());
-                }
             }
         }
 
         let mut qvs = BTreeSet::new();
-        let mut qmvs = BTreeSet::new();
 
-        traverse(&source, &mut qvs, &mut qmvs);
-        traverse(&target, &mut qvs, &mut qmvs);
+        traverse(&source, &mut qvs);
+        traverse(&target, &mut qvs);
 
         GenRule {
             label: label,
-            quantified_variables: qvs,
-            quantified_metavariables: qmvs,
+            quantified: qvs,
             source: source,
             target: target,
         }
@@ -117,34 +110,29 @@ impl<Meta> GenRule<Meta> {
 pub type Rule = GenRule<Void>;
 
 /// The type of open/closed terms in a rewriting system, parameterized on a type
-/// of metavariables.
+/// of variables.
 ///
 /// If the type of metavariables given as an argument to this type has no
 /// inhabitants, then this represents the type of terms that are closed
 /// relative to metavariables.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum GenTerm<Meta> {
+pub enum GenTerm<Var> {
     /// Construct a term that applies an operation to some arguments.
     Op {
         /// The name of the operation.
         head: Identifier,
         /// A vector of argument terms.
-        args: Vec<GenTerm<Meta>>,
+        args: Vec<GenTerm<Var>>,
     },
     /// Construct a term that references a variable in scope.
     Var {
         /// The underlying identifier.
-        name: Identifier,
-    },
-    /// Construct a term that references a metavariable in scope.
-    MetaVar {
-        /// The underlying identifier.
-        id: Meta,
+        name: Var,
     },
 }
 
 /// FIXME: doc
-pub type Term = GenTerm<Void>;
+pub type Term = GenTerm<Identifier>;
 
 /// FIXME: doc
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

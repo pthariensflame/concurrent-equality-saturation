@@ -13,7 +13,7 @@ pub enum NodeForm {
         /// The label of this rule.
         label: Option<Identifier>,
         /// The variables quantified in the source and target nodes.
-        quantified_variables: Vec<Identifier>,
+        quantified: Vec<Identifier>,
     },
     /// A node representing composition of rules; these are manifested lazily.
     Composition,
@@ -71,6 +71,16 @@ pub struct Analysis {
     callback: Box<Fn(&mut EPEG, NodeIndex, Substitution) -> bool + 'static>,
 }
 
+struct SystemNode<'a>(NodeIndex, &'a EPEG);
+
+struct RuleNode<'a>(NodeIndex, &'a EPEG);
+
+struct CompositionNode<'a>(NodeIndex, &'a EPEG);
+
+struct OperationNode<'a>(NodeIndex, &'a EPEG);
+
+struct VarNode<'a>(NodeIndex, &'a EPEG);
+
 impl EPEG {
     /// FIXME: doc
     pub fn saturate<Analyses>(&mut self, anas: &Analyses)
@@ -90,6 +100,53 @@ impl EPEG {
                 }
             }
         }
+    }
+
+    fn child_edges(&self, ix: NodeIndex) -> Vec<(Option<usize>, NodeIndex)> {
+        let mut result = Vec::new();
+        for edge in self.peg.graph.edges_directed(ix, Direction::Outgoing) {
+            result.push((*edge.weight(), edge.target()));
+        }
+        result
+    }
+
+    fn match_system(&self, ix: NodeIndex) -> Option<SystemNode> {
+        // FIXME: check if `ix` is a valid system node here
+        Some(SystemNode(ix, &self))
+    }
+
+    fn system_rules(&self, node: SystemNode) -> Vec<NodeIndex> {
+        unimplemented!()
+    }
+
+    fn match_rule(&self, ix: NodeIndex) -> Option<RuleNode> {
+        // FIXME: check if `ix` is a valid rule node here
+        Some(RuleNode(ix, &self))
+    }
+
+    fn rule_lhs(&self, node: RuleNode) -> NodeIndex {
+        unimplemented!()
+    }
+
+    fn rule_rhs(&self, node: RuleNode) -> NodeIndex {
+        unimplemented!()
+    }
+
+    fn match_composition(&self, ix: NodeIndex) -> Option<CompositionNode> {
+        // FIXME: check if `ix` is a valid composition node here
+        Some(CompositionNode(ix, &self))
+    }
+
+    fn composition_lhs(&self, node: CompositionNode) -> NodeIndex {
+        unimplemented!()
+    }
+
+    fn composition_rhs(&self, node: CompositionNode) -> NodeIndex {
+        unimplemented!()
+    }
+
+    fn match_operation(&self, ix: NodeIndex) -> Option<OperationNode> {
+        unimplemented!()
     }
 
     fn unify_term(
@@ -131,6 +188,38 @@ impl EPEG {
                 }
             }
         }
+    }
+
+    // pub struct GenRule<Var> {
+    //     /// The label associated with this rule, if any.
+    //     pub label: Option<Identifier>,
+    //     /// A list of variables used on either side of this rule.
+    //     pub quantified: BTreeSet<Var>,
+    //     /// The left-hand-side of this rewrite rule.
+    //     pub source: GenTerm<Var>,
+    //     /// The right-hand-side of this rewrite rule.
+    //     pub target: GenTerm<Var>,
+    // }
+
+    fn unify_rule(
+        &self,
+        ix: NodeIndex,
+        pat: rs::GenRule<MetaIdent>
+    ) -> Option<Substitution> {
+        let g = &self.peg.graph;
+        let data = &g[ix];
+
+        let mut result = None;
+
+        // FIXME: should this match on Composition nodes as well?
+        if let NodeForm::Rule { ref label, ref quantified } = *data {
+            if pat.label == *label {
+                let edges = g.edges_directed(ix, Direction::Outgoing);
+
+            }
+        }
+
+        result
     }
 
     fn unify_subsystem(

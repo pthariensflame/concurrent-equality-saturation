@@ -14,11 +14,6 @@ pub enum NodeForm {
         label: Option<Identifier>,
         /// The variables quantified in the source and target nodes.
         quantified_variables: Vec<Identifier>,
-        // FIXME: I don't think these are necessary?
-        // /// A pointer to the source node.
-        // source: NodeIndex,
-        // /// A pointer to the target node.
-        // target: NodeIndex,
     },
     /// A node representing composition of rules; these are manifested lazily.
     Composition,
@@ -82,7 +77,12 @@ impl EPEG {
         }
     }
 
-    fn unify_term(&self, subst: &mut Option<Substitution>, ix: NodeIndex, pat: rs::GenTerm<MetaIdent>) {
+    fn unify_term(
+        &self,
+        subst: &mut Option<Substitution>,
+        ix: NodeIndex,
+        pat: rs::GenTerm<MetaIdent>,
+    ) {
         let g = &self.peg.graph;
         let data = &g[ix];
 
@@ -94,12 +94,11 @@ impl EPEG {
                         if let Some(w) = *edge.weight() {
                             child_edge_map.insert(w, edge.target());
                         } else {
-                            *subst = None;
-                            return;
+                            panic!("An operation node should never have an unlabelled child edge!");
                         }
                     }
 
-                    let ref name = self.peg.original_system.ops[index].name;
+                    let name = &self.peg.original_system.ops[index].name;
                     if *name == head {
                         for (i, arg) in args.iter().enumerate() {
                             if let Some(target) = child_edge_map.get(&i) {
@@ -110,16 +109,21 @@ impl EPEG {
                         *subst = None;
                     }
                 }
-            },
+            }
             rs::GenTerm::Var { name } => {
                 if let Some(ref mut s) = *subst {
                     s.insert(name, ix);
                 }
-            },
+            }
         }
     }
 
-    fn unify_subsystem(&self, substs: &mut HashSet<Substitution>, ix: NodeIndex, pat: HashSet<rs::GenRule<MetaIdent>>) {
+    fn unify_subsystem(
+        &self,
+        substs: &mut HashSet<Substitution>,
+        ix: NodeIndex,
+        pat: HashSet<rs::GenRule<MetaIdent>>,
+    ) {
         unimplemented!()
     }
 
@@ -132,11 +136,11 @@ impl EPEG {
                 if let Some(s) = subst {
                     result.insert(s);
                 }
-            },
+            }
             Trigger::Subsystem(subsystem) => {
                 self.unify_subsystem(&mut result, ix, subsystem);
-            },
+            }
         }
-        return result;
+        result
     }
 }

@@ -30,34 +30,49 @@ pub enum NodeForm {
     },
 }
 
+/// FIXME: doc
 #[derive(Debug, Clone)]
 pub struct PEG {
+    /// FIXME: doc
     pub original_system: rs::RewritingSystem,
+    /// FIXME: doc
     pub graph: DiGraph<NodeForm, Option<usize>>,
 }
 
+/// FIXME: doc
 #[derive(Debug, Clone)]
 pub struct EPEG {
+    /// FIXME: doc
     pub peg: PEG,
+    /// FIXME: doc
     pub equiv_classes: HashSet<BTreeSet<NodeIndex>>,
 }
 
+/// FIXME: doc
 pub type MetaIdent = Identifier;
 
+/// FIXME: doc
 #[derive(Debug, Clone)]
 pub enum Trigger {
+    /// FIXME: doc
     Term(rs::GenTerm<MetaIdent>),
+    /// FIXME: doc
     Subsystem(HashSet<rs::GenRule<MetaIdent>>),
 }
 
+/// FIXME: doc
 pub type Substitution = BTreeMap<MetaIdent, NodeIndex>;
 
+/// FIXME: doc
 pub struct Analysis {
+    /// FIXME: doc
     trigger: Trigger,
+    /// FIXME: doc
     callback: Box<Fn(&mut EPEG, NodeIndex, Substitution) -> bool + 'static>,
 }
 
 impl EPEG {
+    /// FIXME: doc
     pub fn saturate<Analyses>(&mut self, anas: &Analyses)
     where
         Analyses: IntoIterator + Clone,
@@ -127,6 +142,7 @@ impl EPEG {
         unimplemented!()
     }
 
+    /// FIXME: doc
     pub fn unify_with_node(&self, ix: NodeIndex, trig: Trigger) -> HashSet<Substitution> {
         let mut result = HashSet::new();
         match trig {

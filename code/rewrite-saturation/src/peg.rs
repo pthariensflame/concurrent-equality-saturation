@@ -1,7 +1,11 @@
+// -----------------------------------------------------------------------------
+
 use std::collections::*;
 use petgraph::prelude::*;
 use super::rewriting_system as rs;
 pub use self::rs::Identifier;
+
+// -----------------------------------------------------------------------------
 
 /// FIXME: doc
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -30,6 +34,8 @@ pub enum NodeForm {
     },
 }
 
+// -----------------------------------------------------------------------------
+
 /// FIXME: doc
 #[derive(Debug, Clone)]
 pub struct PEG {
@@ -39,6 +45,8 @@ pub struct PEG {
     pub graph: DiGraph<NodeForm, Option<usize>>,
 }
 
+// -----------------------------------------------------------------------------
+
 /// FIXME: doc
 #[derive(Debug, Clone)]
 pub struct EPEG {
@@ -47,6 +55,8 @@ pub struct EPEG {
     /// FIXME: doc
     pub equiv_classes: HashSet<BTreeSet<NodeIndex>>,
 }
+
+// -----------------------------------------------------------------------------
 
 /// FIXME: doc
 pub type MetaIdent = Identifier;
@@ -71,15 +81,69 @@ pub struct Analysis {
     callback: Box<Fn(&mut EPEG, NodeIndex, Substitution) -> bool + 'static>,
 }
 
+// -----------------------------------------------------------------------------
+
 struct SystemNode<'a>(NodeIndex, &'a EPEG);
+
+impl <'a> SystemNode<'a> {
+    fn rules(&self) -> Vec<NodeIndex> {
+        unimplemented!()
+    }
+}
 
 struct RuleNode<'a>(NodeIndex, &'a EPEG);
 
+impl <'a> RuleNode<'a> {
+    fn label(&self) -> Option<Identifier> {
+        unimplemented!()
+    }
+
+    fn quantified(&self) -> Vec<Identifier> {
+        unimplemented!()
+    }
+
+    fn lhs(&self) -> NodeIndex {
+        unimplemented!()
+    }
+
+    fn rhs(&self) -> NodeIndex {
+        unimplemented!()
+    }
+}
+
 struct CompositionNode<'a>(NodeIndex, &'a EPEG);
+
+impl <'a> CompositionNode<'a> {
+    fn lhs(&self) -> NodeIndex {
+        unimplemented!()
+    }
+
+    fn rhs(&self) -> NodeIndex {
+        unimplemented!()
+    }
+}
 
 struct OperationNode<'a>(NodeIndex, &'a EPEG);
 
+impl <'a> OperationNode<'a> {
+    fn name(&self) -> Identifier {
+        unimplemented!()
+    }
+
+    fn args(&self) -> Vec<NodeIndex> {
+        unimplemented!()
+    }
+}
+
 struct VarNode<'a>(NodeIndex, &'a EPEG);
+
+impl <'a> VarNode<'a> {
+    fn name(&self) -> Identifier {
+        unimplemented!()
+    }
+}
+
+// -----------------------------------------------------------------------------
 
 impl EPEG {
     /// FIXME: doc
@@ -102,6 +166,7 @@ impl EPEG {
         }
     }
 
+    // FIXME: doc
     fn child_edges(&self, ix: NodeIndex) -> Vec<(Option<usize>, NodeIndex)> {
         let mut result = Vec::new();
         for edge in self.peg.graph.edges_directed(ix, Direction::Outgoing) {
@@ -110,45 +175,131 @@ impl EPEG {
         result
     }
 
+    // FIXME: doc
     fn match_system(&self, ix: NodeIndex) -> Option<SystemNode> {
-        // FIXME: check if `ix` is a valid system node here
-        Some(SystemNode(ix, &self))
+        // FIXME: maybe change these checks to asserts?
+
+        // The node referenced by `ix` must be a system node.
+        if let NodeForm::System = self.peg.graph[ix] {
+            for (weight, _child) in self.child_edges(ix) {
+                // A system node should never have an outgoing weighted edge.
+                if weight.is_some() {
+                    return None;
+                }
+            }
+
+            return Some(SystemNode(ix, self));
+        }
+
+        None
     }
 
-    fn system_rules(&self, node: SystemNode) -> Vec<NodeIndex> {
-        unimplemented!()
-    }
-
+    // FIXME: doc
     fn match_rule(&self, ix: NodeIndex) -> Option<RuleNode> {
-        // FIXME: check if `ix` is a valid rule node here
-        Some(RuleNode(ix, &self))
+        // FIXME: maybe change these checks to asserts?
+
+        // The node referenced by `ix` must be a rule node.
+        if let NodeForm::Rule { .. } = self.peg.graph[ix] {
+            let children = self.child_edges(ix);
+
+            // A rule node must have exactly two outgoing edges.
+            if children.len() != 2 {
+                return None;
+            }
+
+            let (c0, c1) = (children[0], children[1]);
+
+            // The two outgoing edges of a rule node must be weighted, and their
+            // weights must not be equal to one another.
+            if (c0.0 == None) || (c1.0 == None) || (c0.0 == c1.0) {
+                return None;
+            }
+
+            // FIXME: check if child nodes respect scope?
+
+            return Some(RuleNode(ix, self));
+        }
+
+        None
     }
 
-    fn rule_lhs(&self, node: RuleNode) -> NodeIndex {
-        unimplemented!()
-    }
-
-    fn rule_rhs(&self, node: RuleNode) -> NodeIndex {
-        unimplemented!()
-    }
-
+    // FIXME: doc
     fn match_composition(&self, ix: NodeIndex) -> Option<CompositionNode> {
-        // FIXME: check if `ix` is a valid composition node here
-        Some(CompositionNode(ix, &self))
+        // FIXME: maybe change these checks to asserts?
+
+        // The node referenced by `ix` must be a composition node.
+        if let NodeForm::Composition { .. } = self.peg.graph[ix] {
+            let children = self.child_edges(ix);
+
+            // A composition node must have exactly two outgoing edges.
+            if children.len() != 2 {
+                return None;
+            }
+
+            let (c0, c1) = (children[0], children[1]);
+
+            // The two outgoing edges of a rule node must be weighted, and their
+            // weights must not be equal to one another.
+            if (c0.0 == None) || (c1.0 == None) || (c0.0 == c1.0) {
+                return None;
+            }
+
+            // FIXME: check if child nodes are compatible?
+
+            return Some(CompositionNode(ix, self));
+        }
+
+        None
     }
 
-    fn composition_lhs(&self, node: CompositionNode) -> NodeIndex {
-        unimplemented!()
-    }
-
-    fn composition_rhs(&self, node: CompositionNode) -> NodeIndex {
-        unimplemented!()
-    }
-
+    // FIXME: doc
     fn match_operation(&self, ix: NodeIndex) -> Option<OperationNode> {
-        unimplemented!()
+        // FIXME: maybe change these checks to asserts?
+
+        // The node referenced by `ix` must be a operation node.
+        if let NodeForm::Operation { .. } = self.peg.graph[ix] {
+            let children = self.child_edges(ix);
+
+            let mut weights = HashSet::new();
+
+            for (weight, _child) in children {
+                if let Some(w) = weight {
+                    // There should never be two edges coming out of the same
+                    // operation node with the same weight.
+                    if weights.contains(&w) {
+                        return None;
+                    }
+                    weights.insert(w);
+                } else {
+                    // An operation node must only have weighted outgoing edges.
+                    return None;
+                }
+            }
+
+            return Some(OperationNode(ix, self));
+        }
+
+        None
     }
 
+    // FIXME: doc
+    fn match_var(&self, ix: NodeIndex) -> Option<VarNode> {
+        // FIXME: maybe change these checks to asserts?
+
+        // The node referenced by `ix` must be a variable node.
+        if let NodeForm::Var { .. } = self.peg.graph[ix] {
+            // A variable node must not have any outgoing edges.
+            if !(self.child_edges(ix).is_empty()) {
+                return None;
+            }
+
+            return Some(VarNode(ix, self));
+        }
+
+        None
+    }
+
+    // FIXME: doc
     fn unify_term(
         &self,
         subst: &mut Option<Substitution>,
@@ -190,17 +341,7 @@ impl EPEG {
         }
     }
 
-    // pub struct GenRule<Var> {
-    //     /// The label associated with this rule, if any.
-    //     pub label: Option<Identifier>,
-    //     /// A list of variables used on either side of this rule.
-    //     pub quantified: BTreeSet<Var>,
-    //     /// The left-hand-side of this rewrite rule.
-    //     pub source: GenTerm<Var>,
-    //     /// The right-hand-side of this rewrite rule.
-    //     pub target: GenTerm<Var>,
-    // }
-
+    // FIXME: doc
     fn unify_rule(
         &self,
         ix: NodeIndex,
@@ -212,16 +353,17 @@ impl EPEG {
         let mut result = None;
 
         // FIXME: should this match on Composition nodes as well?
-        if let NodeForm::Rule { ref label, ref quantified } = *data {
+        if let NodeForm::Rule { ref label, .. } = *data {
             if pat.label == *label {
                 let edges = g.edges_directed(ix, Direction::Outgoing);
-
+                unimplemented!()
             }
         }
 
         result
     }
 
+    // FIXME: doc
     fn unify_subsystem(
         &self,
         substs: &mut HashSet<Substitution>,
@@ -249,3 +391,5 @@ impl EPEG {
         result
     }
 }
+
+// -----------------------------------------------------------------------------

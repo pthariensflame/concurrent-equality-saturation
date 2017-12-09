@@ -81,7 +81,7 @@ impl<Var> GenRule<Var> {
             V: Ord + Clone,
         {
             match *term {
-                GenTerm::Op { ref head, ref args } => {
+                GenTerm::Op { ref args, .. } => {
                     for a in args {
                         traverse(a, qvs);
                     }

@@ -86,52 +86,100 @@ pub struct Analysis {
 struct SystemNode<'a>(NodeIndex, &'a EPEG);
 
 impl <'a> SystemNode<'a> {
-    fn rules(&self) -> Vec<NodeIndex> {
-        unimplemented!()
+    fn rules(&self) -> HashSet<NodeIndex> {
+        self.1.child_edges(self.0)
+            .into_iter()
+            .map(|(_, c)| c)
+            .collect()
     }
 }
 
 struct RuleNode<'a>(NodeIndex, &'a EPEG);
 
 impl <'a> RuleNode<'a> {
-    fn label(&self) -> Option<Identifier> {
-        unimplemented!()
+    fn children(&self) -> (NodeIndex, NodeIndex) {
+        let children = self.1.child_edges(self.0);
+        if children[0].0 < children[1].0 {
+            (children[0].1, children[1].1)
+        } else {
+            (children[1].1, children[0].1)
+        }
     }
 
-    fn quantified(&self) -> Vec<Identifier> {
-        unimplemented!()
+    fn label(&self) -> &'a Option<Identifier> {
+        if let NodeForm::Rule { ref label, .. } = self.1.peg.graph[self.0] {
+            label
+        } else {
+            panic!("RuleNode invariant violated!")
+        }
+    }
+
+    fn quantified(&self) -> &'a Vec<Identifier> {
+        if let NodeForm::Rule { ref quantified, .. } = self.1.peg.graph[self.0] {
+            quantified
+        } else {
+            panic!("RuleNode invariant violated!")
+        }
     }
 
     fn lhs(&self) -> NodeIndex {
-        unimplemented!()
+        self.children().0
     }
 
     fn rhs(&self) -> NodeIndex {
-        unimplemented!()
+        self.children().1
     }
 }
 
 struct CompositionNode<'a>(NodeIndex, &'a EPEG);
 
 impl <'a> CompositionNode<'a> {
+    fn children(&self) -> (NodeIndex, NodeIndex) {
+        let children = self.1.child_edges(self.0);
+        if children[0].0 < children[1].0 {
+            (children[0].1, children[1].1)
+        } else {
+            (children[1].1, children[0].1)
+        }
+    }
+
     fn lhs(&self) -> NodeIndex {
-        unimplemented!()
+        self.children().0
     }
 
     fn rhs(&self) -> NodeIndex {
-        unimplemented!()
+        self.children().1
     }
 }
 
 struct OperationNode<'a>(NodeIndex, &'a EPEG);
 
 impl <'a> OperationNode<'a> {
-    fn name(&self) -> Identifier {
-        unimplemented!()
+    fn operation(&self) -> &'a rs::Operation {
+        if let NodeForm::Operation { index } = self.1.peg.graph[self.0] {
+            &(self.1.peg.original_system.ops[index])
+        } else {
+            panic!("OperationNode invariant violated!")
+        }
+    }
+
+    fn name(&self) -> &'a Identifier {
+        &(self.operation().name)
+    }
+
+    fn signature(&self) -> (&'a Vec<Identifier>, &'a Identifier) {
+        let op = self.operation();
+        (&op.arg_sorts, &op.result_sort)
+    }
+
+    fn frozenness(&self) -> &'a rs::Frozenness {
+        &(self.operation().frozenness)
     }
 
     fn args(&self) -> Vec<NodeIndex> {
-        unimplemented!()
+        let mut children = self.1.child_edges(self.0);
+        children.sort_unstable_by_key(|&(w, _)| w);
+        children.into_iter().map(|(_, c)| c).collect()
     }
 }
 
@@ -306,32 +354,40 @@ impl EPEG {
         ix: NodeIndex,
         pat: rs::GenTerm<MetaIdent>,
     ) {
-        let g = &self.peg.graph;
-        let data = &g[ix];
+        // let g = &self.peg.graph;
+        // let data = &g[ix];
 
         match pat {
             rs::GenTerm::Op { head, args } => {
-                if let NodeForm::Operation { index } = *data {
-                    let mut child_edge_map: BTreeMap<usize, NodeIndex> = BTreeMap::new();
-                    for edge in g.edges_directed(ix, Direction::Outgoing) {
-                        if let Some(w) = *edge.weight() {
-                            child_edge_map.insert(w, edge.target());
-                        } else {
-                            panic!("An operation node should never have an unlabelled child edge!");
-                        }
-                    }
+                if let Some(op_node) = self.match_operation(ix) {
+                    let name = op_node.name();
 
-                    let name = &self.peg.original_system.ops[index].name;
-                    if *name == head {
-                        for (i, arg) in args.iter().enumerate() {
-                            if let Some(target) = child_edge_map.get(&i) {
-                                self.unify_term(subst, *target, arg.clone());
-                            }
-                        }
-                    } else {
-                        *subst = None;
-                    }
+
+                    let args = op_node.args();
+
                 }
+
+                // if let NodeForm::Operation { index } = *data {
+                //     let mut child_edge_map: BTreeMap<usize, NodeIndex> = BTreeMap::new();
+                //     for edge in g.edges_directed(ix, Direction::Outgoing) {
+                //         if let Some(w) = *edge.weight() {
+                //             child_edge_map.insert(w, edge.target());
+                //         } else {
+                //             panic!("An operation node should never have an unlabelled child edge!");
+                //         }
+                //     }
+                //
+                //     let name = &self.peg.original_system.ops[index].name;
+                //     if *name == head {
+                //         for (i, arg) in args.iter().enumerate() {
+                //             if let Some(target) = child_edge_map.get(&i) {
+                //                 self.unify_term(subst, *target, arg.clone());
+                //             }
+                //         }
+                //     } else {
+                //         *subst = None;
+                //     }
+                // }
             }
             rs::GenTerm::Var { name } => {
                 if let Some(ref mut s) = *subst {

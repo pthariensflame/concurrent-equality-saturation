@@ -1,6 +1,7 @@
 // -----------------------------------------------------------------------------
 
 use std::collections::*;
+use std::iter::FromIterator;
 use petgraph::prelude::*;
 use super::rewriting_system as rs;
 pub use self::rs::Identifier;
@@ -187,7 +188,11 @@ struct VarNode<'a>(NodeIndex, &'a EPEG);
 
 impl <'a> VarNode<'a> {
     fn name(&self) -> Identifier {
-        unimplemented!()
+        if let NodeForm::Var { ref name } = self.1.peg.graph[self.0] {
+            name.clone()
+        } else {
+            panic!("VarNode invariant violated!")
+        }
     }
 }
 
@@ -354,46 +359,66 @@ impl EPEG {
         ix: NodeIndex,
         pat: rs::GenTerm<MetaIdent>,
     ) {
-        // let g = &self.peg.graph;
-        // let data = &g[ix];
+        // A helper function that takes all the same arguments as unify_term
+        // but returns a boolean representing whether or not the match
+        // succeeded (this avoids repeatedly having to write `*subst = None`
+        // every time we need to fail the pattern match).
+        fn helper(
+            epeg: &EPEG,
+            subst: &mut Option<Substitution>,
+            ix: NodeIndex,
+            pat: rs::GenTerm<MetaIdent>,
+        ) -> bool {
+            // Match against the given pattern.
+            match pat {
+                // Check if the pattern is an operation pattern.
+                rs::GenTerm::Op { head: pat_head, args: pat_args } => {
+                    // Check if the graph node is an operation node.
+                    // If it isn't, we fail.
+                    if let Some(op_node) = epeg.match_operation(ix) {
+                        // Get the head and arguments of the operation node.
+                        let graph_head = op_node.name();
+                        let graph_args = op_node.args();
 
-        match pat {
-            rs::GenTerm::Op { head, args } => {
-                if let Some(op_node) = self.match_operation(ix) {
-                    let name = op_node.name();
+                        // If the operation name is different between the
+                        // pattern and the node, we fail.
+                        if pat_head != graph_head.clone() {
+                            return false;
+                        }
 
+                        // If the number of arguments is different between the
+                        // pattern and the node, we fail.
+                        if pat_args.len() != graph_args.len() {
+                            return false;
+                        }
 
-                    let args = op_node.args();
-
+                        // Iterate over the zipped-together pattern arguments
+                        // and graph arguments, unifying them.
+                        for (p, g) in pat_args.iter().zip(graph_args.iter()) {
+                            epeg.unify_term(subst, *g, p.clone());
+                        }
+                    } else {
+                        return false;
+                    }
                 }
-
-                // if let NodeForm::Operation { index } = *data {
-                //     let mut child_edge_map: BTreeMap<usize, NodeIndex> = BTreeMap::new();
-                //     for edge in g.edges_directed(ix, Direction::Outgoing) {
-                //         if let Some(w) = *edge.weight() {
-                //             child_edge_map.insert(w, edge.target());
-                //         } else {
-                //             panic!("An operation node should never have an unlabelled child edge!");
-                //         }
-                //     }
-                //
-                //     let name = &self.peg.original_system.ops[index].name;
-                //     if *name == head {
-                //         for (i, arg) in args.iter().enumerate() {
-                //             if let Some(target) = child_edge_map.get(&i) {
-                //                 self.unify_term(subst, *target, arg.clone());
-                //             }
-                //         }
-                //     } else {
-                //         *subst = None;
-                //     }
-                // }
-            }
-            rs::GenTerm::Var { name } => {
-                if let Some(ref mut s) = *subst {
-                    s.insert(name, ix);
+                // Check if the pattern is a metavariable pattern.
+                rs::GenTerm::Var { name: metavar } => {
+                    // If the pattern match has not yet failed, we insert a
+                    // substitution from `metavar` to `ix`, since a
+                    // metavariable will match against any graph node.
+                    if let Some(ref mut s) = *subst {
+                        s.insert(metavar, ix);
+                    }
                 }
             }
+
+            true
+        }
+
+        // If `false` was returned when running `helper`, we mutate `subst`
+        // to be `None`.
+        if helper(self, subst, ix, pat) {
+            *subst = None;
         }
     }
 
@@ -403,17 +428,76 @@ impl EPEG {
         ix: NodeIndex,
         pat: rs::GenRule<MetaIdent>
     ) -> Option<Substitution> {
-        let g = &self.peg.graph;
-        let data = &g[ix];
-
         let mut result = None;
 
         // FIXME: should this match on Composition nodes as well?
-        if let NodeForm::Rule { ref label, .. } = *data {
-            if pat.label == *label {
-                let edges = g.edges_directed(ix, Direction::Outgoing);
-                unimplemented!()
+        if let Some(ref rule_node) = self.match_rule(ix) {
+            // Get the label, left-hand-side, and right-hand-side of the
+            // rule node and pattern.
+            let graph_label = rule_node.label().clone();
+            let (graph_lhs, graph_rhs) = rule_node.children();
+            let pat_label = pat.label;
+            let (pat_lhs, pat_rhs) = (pat.source, pat.target);
+
+            // If the pattern (optional) label is not the same as the graph
+            // node label, return `None`.
+            if pat_label != graph_label {
+                return None;
             }
+
+            // Match the LHS pattern against the LHS node.
+            // If this match fails, we return `None`.
+            let lhs_subst = {
+                let mut opt_lhs_subst = Some(Substitution::new());
+                self.unify_term(&mut opt_lhs_subst, graph_lhs, pat_lhs);
+                if let Some(subst) = opt_lhs_subst {
+                    subst
+                } else {
+                    return None;
+                }
+            };
+
+            // Match the RHS pattern against the RHS node.
+            // If this match fails, we return `None`.
+            let rhs_subst = {
+                let mut opt_rhs_subst = Some(Substitution::new());
+                self.unify_term(&mut opt_rhs_subst, graph_rhs, pat_rhs);
+                if let Some(subst) = opt_rhs_subst {
+                    subst
+                } else {
+                    return None;
+                }
+            };
+
+            // Get `BTreeSet`s corresponding to the set of metavariables in the
+            // left- and right-hand-side substitutions.
+            let lhs_keys = BTreeSet::from_iter(lhs_subst.keys());
+            let rhs_keys = BTreeSet::from_iter(rhs_subst.keys());
+
+            // Create the result substitution map.
+            let mut subst = Substitution::new();
+
+            // If there are metavariables repeated between the left-hand-side
+            // pattern and the right-hand-side pattern, the resultant
+            // substitutions must map the same keys to the same values.
+            for shared in lhs_keys.intersection(&rhs_keys) {
+                if lhs_subst[shared] != rhs_subst[shared] {
+                    return None;
+                }
+            }
+
+            for &key in lhs_keys.union(&rhs_keys) {
+                if let Some(&v) = lhs_subst.get(key) {
+                    subst.insert(key.clone(), v);
+                    continue;
+                }
+                if let Some(&v) = rhs_subst.get(key) {
+                    subst.insert(key.clone(), v);
+                    continue;
+                }
+            }
+
+            result = Some(subst);
         }
 
         result
@@ -434,7 +518,7 @@ impl EPEG {
         let mut result = HashSet::new();
         match trig {
             Trigger::Term(term) => {
-                let mut subst = Some(BTreeMap::new());
+                let mut subst = Some(Substitution::new());
                 self.unify_term(&mut subst, ix, term);
                 if let Some(s) = subst {
                     result.insert(s);

@@ -57,7 +57,7 @@ pub struct Equation {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GenRule<Var> {
     /// The label associated with this rule, if any.
-    pub label: Option<Identifier>,
+    pub label: Option<Var>,
     /// A list of variables used on either side of this rule.
     pub quantified: BTreeSet<Var>,
     /// The left-hand-side of this rewrite rule.
@@ -69,7 +69,7 @@ pub struct GenRule<Var> {
 impl<Var> GenRule<Var> {
     /// FIXME: doc
     pub fn new(
-        label: Option<Identifier>,
+        label: Option<Var>,
         source: GenTerm<Var>,
         target: GenTerm<Var>,
     ) -> GenRule<Var>
@@ -107,7 +107,7 @@ impl<Var> GenRule<Var> {
 }
 
 /// FIXME: doc
-pub type Rule = GenRule<Void>;
+pub type Rule = GenRule<Identifier>;
 
 /// The type of open/closed terms in a rewriting system, parameterized on a type
 /// of variables.

@@ -2,6 +2,7 @@
 
 use std::collections::*;
 use std::iter::FromIterator;
+use itertools::Either;
 use petgraph::prelude::*;
 use super::rewriting_system as rs;
 pub use self::rs::Identifier;
@@ -63,12 +64,21 @@ pub struct EPEG {
 pub type MetaIdent = Identifier;
 
 /// FIXME: doc
+pub type TermPattern = rs::GenTerm<MetaIdent>;
+
+/// FIXME: doc
+pub type LabelPattern = Either<Identifier, MetaIdent>;
+
+/// FIXME: doc
+pub type RulePattern = rs::GenRule<LabelPattern, MetaIdent>;
+
+/// FIXME: doc
 #[derive(Debug, Clone)]
 pub enum Trigger {
     /// FIXME: doc
-    Term(rs::GenTerm<MetaIdent>),
+    Term(TermPattern),
     /// FIXME: doc
-    Subsystem(HashSet<rs::GenRule<MetaIdent>>),
+    Subsystem(HashSet<RulePattern>),
 }
 
 /// FIXME: doc
@@ -346,6 +356,9 @@ impl EPEG {
                 return None;
             }
 
+            // FIXME: maybe the variable should have an outgoing edge to the
+            // node that binds the variable's scope (e.g.: the rule node)?
+
             return Some(VarNode(ix, self));
         }
 
@@ -417,7 +430,7 @@ impl EPEG {
 
         // If `false` was returned when running `helper`, we mutate `subst`
         // to be `None`.
-        if helper(self, subst, ix, pat) {
+        if !helper(self, subst, ix, pat) {
             *subst = None;
         }
     }
@@ -426,7 +439,7 @@ impl EPEG {
     fn unify_rule(
         &self,
         ix: NodeIndex,
-        pat: rs::GenRule<MetaIdent>
+        pat: RulePattern,
     ) -> Option<Substitution> {
         let mut result = None;
 
@@ -439,10 +452,33 @@ impl EPEG {
             let pat_label = pat.label;
             let (pat_lhs, pat_rhs) = (pat.source, pat.target);
 
-            // If the pattern (optional) label is not the same as the graph
-            // node label, return `None`.
-            if pat_label != graph_label {
-                return None;
+            // Match the label pattern against the graph node label.
+            match pat_label {
+                // If the label pattern is a label literal, check if the label
+                // matches the one on the graph node.
+                Some(Either::Left(ident)) => {
+                    if graph_label != Some(ident) {
+                        return None;
+                    }
+                }
+                // If the label pattern is a label metavariable, it will
+                // match iff the graph node has a label.
+                Some(Either::Right(mvar)) => {
+                    if graph_label == None {
+                        return None;
+                    }
+                    // FIXME: maybe the result substitution should contain
+                    // a mapping from the label metavariable?
+                    // This would require that the PEG graph contain nodes
+                    // for rule labels.
+                }
+                // If the label pattern is `None`, it will match iff the graph
+                // node is unlabelled.
+                None => {
+                    if graph_label != None {
+                        return None;
+                    }
+                }
             }
 
             // Match the LHS pattern against the LHS node.
@@ -469,13 +505,13 @@ impl EPEG {
                 }
             };
 
+            // Create the result substitution map.
+            let mut subst = Substitution::new();
+
             // Get `BTreeSet`s corresponding to the set of metavariables in the
             // left- and right-hand-side substitutions.
             let lhs_keys = BTreeSet::from_iter(lhs_subst.keys());
             let rhs_keys = BTreeSet::from_iter(rhs_subst.keys());
-
-            // Create the result substitution map.
-            let mut subst = Substitution::new();
 
             // If there are metavariables repeated between the left-hand-side
             // pattern and the right-hand-side pattern, the resultant
@@ -486,6 +522,10 @@ impl EPEG {
                 }
             }
 
+            // Create the union of `lhs_subst` and `rhs_subst`.
+            // If `lhs_subst` and `rhs_subst` share a key, they are guaranteed
+            // by the previous code to have the same value for that key, so
+            // this is well-defined.
             for &key in lhs_keys.union(&rhs_keys) {
                 if let Some(&v) = lhs_subst.get(key) {
                     subst.insert(key.clone(), v);
@@ -506,11 +546,60 @@ impl EPEG {
     // FIXME: doc
     fn unify_subsystem(
         &self,
-        substs: &mut HashSet<Substitution>,
+        substs: &mut Option<HashSet<Substitution>>,
         ix: NodeIndex,
-        pat: HashSet<rs::GenRule<MetaIdent>>,
+        pats: HashSet<RulePattern>,
     ) {
-        unimplemented!()
+        fn search(
+            epeg: &EPEG,
+            rules: &[NodeIndex],
+            pats: &[RulePattern],
+        ) -> Option<HashSet<Substitution>> {
+            let mut all = BTreeSet::new();
+            for rule in rules {
+                let mut matches = BTreeSet::new();
+                for (i, pat) in pats.iter().enumerate() {
+                    if let Some(s) = epeg.unify_rule(*rule, pat.clone()) {
+                        matches.insert((i, s));
+                    }
+                }
+                all.insert(matches);
+            }
+
+            fn foo(
+                remaining: &[BTreeSet<(usize, Substitution)>],
+                allowed: BTreeSet<usize>,
+            ) -> HashSet<Substitution> {
+                unimplemented!()
+            }
+
+            // all :: Vec<BTreeSet<(usize, Substitution)>>
+            // req :: BTreeSet<usize>
+
+            // we need to find the set of all sections of `all` that have every
+            // `usize` in `req` such that no
+            unimplemented!()
+        }
+
+        if let Some(system_node) = self.match_system(ix) {
+            let mut rule_nodes = Vec::new();
+            for n in system_node.rules() {
+                if let Some(rule_node) = self.match_rule(n) {
+                    rule_nodes.push(rule_node.0);
+                } else if let Some(_comp_node) = self.match_composition(n) {
+                    // We can't match against a composition node, for now...
+                } else {
+                    panic!("Child of a system node is not a rule or composition node!");
+                }
+            }
+            let mut patterns = Vec::new();
+            for pat in pats {
+                patterns.push(pat);
+            }
+            *substs = search(self, &rule_nodes, &patterns);
+        } else {
+            *substs = None;
+        }
     }
 
     /// FIXME: doc
@@ -525,7 +614,8 @@ impl EPEG {
                 }
             }
             Trigger::Subsystem(subsystem) => {
-                self.unify_subsystem(&mut result, ix, subsystem);
+                // self.unify_subsystem(&mut result, ix, subsystem);
+                unimplemented!()
             }
         }
         result

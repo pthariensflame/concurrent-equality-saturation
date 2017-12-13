@@ -55,9 +55,9 @@ pub struct Equation {
 /// If the type of metavariables given as an argument to this type has no
 /// inhabitants, then this represents the type of closed rules.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct GenRule<Var> {
+pub struct GenRule<Label, Var> {
     /// The label associated with this rule, if any.
-    pub label: Option<Var>,
+    pub label: Option<Label>,
     /// A list of variables used on either side of this rule.
     pub quantified: BTreeSet<Var>,
     /// The left-hand-side of this rewrite rule.
@@ -66,13 +66,13 @@ pub struct GenRule<Var> {
     pub target: GenTerm<Var>,
 }
 
-impl<Var> GenRule<Var> {
+impl<Label, Var> GenRule<Label, Var> {
     /// FIXME: doc
     pub fn new(
-        label: Option<Var>,
+        label: Option<Label>,
         source: GenTerm<Var>,
         target: GenTerm<Var>,
-    ) -> GenRule<Var>
+    ) -> GenRule<Label, Var>
     where
         Var: Ord + Clone,
     {
@@ -107,7 +107,7 @@ impl<Var> GenRule<Var> {
 }
 
 /// FIXME: doc
-pub type Rule = GenRule<Identifier>;
+pub type Rule = GenRule<Identifier, Identifier>;
 
 /// The type of open/closed terms in a rewriting system, parameterized on a type
 /// of variables.

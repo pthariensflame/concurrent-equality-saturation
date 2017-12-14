@@ -12,7 +12,7 @@ pub use self::rs::Identifier;
 
 /// FIXME: doc
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum NodeForm {
+pub enum PEGNode {
     /// FIXME: doc
     System,
     /// FIXME: doc
@@ -37,9 +37,45 @@ pub enum NodeForm {
     },
 }
 
-impl fmt::Display for NodeForm {
-    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
-        unimplemented!()
+impl fmt::Display for PEGNode {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            PEGNode::System => {
+                write!(formatter, "\\\\star")
+            },
+            PEGNode::Rule { ref label, .. } => {
+                if let Some(ref l) = *label {
+                    write!(formatter, "\\\\to_{{{}}}", l)
+                } else {
+                    write!(formatter, "\\\\to")
+                }
+            },
+            PEGNode::Composition => {
+                write!(formatter, "\\\\mathbb{{C}}")
+            },
+            PEGNode::Operation { ref index } => {
+                write!(formatter, "\\\\mathrm{{op}}_{{{}}}", index)
+            },
+            PEGNode::Var { ref name } => {
+                write!(formatter, "\\\\mathrm{{{}}}", name)
+            },
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+/// FIXME: doc
+#[derive(Debug, Clone)]
+pub struct PEGEdge(Option<usize>);
+
+impl fmt::Display for PEGEdge {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        if let PEGEdge(Some(ref x)) = *self {
+            write!(formatter, "{}", x)
+        } else {
+            write!(formatter, "")
+        }
     }
 }
 
@@ -51,7 +87,7 @@ pub struct PEG {
     /// FIXME: doc
     pub system: rs::RewritingSystem,
     /// FIXME: doc
-    pub graph: DiGraph<NodeForm, Option<usize>>,
+    pub graph: DiGraph<PEGNode, PEGEdge>,
 }
 
 impl PEG {
@@ -72,16 +108,16 @@ impl PEG {
                     }
                     temp as usize
                 };
-                let op_node_data = NodeForm::Operation { index };
+                let op_node_data = PEGNode::Operation { index };
                 let op_node = self.graph.add_node(op_node_data);
                 for (i, arg) in args.iter().enumerate() {
                     let child = self.add_term(arg);
-                    self.graph.add_edge(op_node, child, Some(i));
+                    self.graph.add_edge(op_node, child, PEGEdge(Some(i)));
                 }
                 op_node
             },
             rs::GenTerm::Var { ref name } => {
-                let var_node_data = NodeForm::Var { name: name.clone() };
+                let var_node_data = PEGNode::Var { name: name.clone() };
                 let var_node = self.graph.add_node(var_node_data);
                 var_node
             },
@@ -90,24 +126,24 @@ impl PEG {
 
     // FIXME: doc
     fn add_rule(&mut self, rule: &rs::Rule) -> NodeIndex {
-        let rule_node_data = NodeForm::Rule {
+        let rule_node_data = PEGNode::Rule {
             label: rule.label.clone(),
             quantified: Vec::from_iter(rule.quantified.iter().cloned()),
         };
         let rule_node = self.graph.add_node(rule_node_data);
         let lhs_node = self.add_term(&(rule.source));
         let rhs_node = self.add_term(&(rule.target));
-        self.graph.add_edge(rule_node, lhs_node, Some(1));
-        self.graph.add_edge(rule_node, rhs_node, Some(2));
+        self.graph.add_edge(rule_node, lhs_node, PEGEdge(Some(1)));
+        self.graph.add_edge(rule_node, rhs_node, PEGEdge(Some(2)));
         rule_node
     }
 
     // FIXME: doc
     fn add_system(&mut self, system: &rs::RewritingSystem) -> NodeIndex {
-        let sys_node = self.graph.add_node(NodeForm::System);
+        let sys_node = self.graph.add_node(PEGNode::System);
         for rule in system.rules.clone() {
             let rule_node = self.add_rule(&rule);
-            self.graph.add_edge(sys_node, rule_node, None);
+            self.graph.add_edge(sys_node, rule_node, PEGEdge(None));
         }
         sys_node
     }
@@ -116,7 +152,7 @@ impl PEG {
     pub fn new(sys: &rs::RewritingSystem) -> PEG {
         let mut result = PEG {
             system: sys.clone(),
-            graph: DiGraph::<NodeForm, Option<usize>>::new(),
+            graph: DiGraph::<PEGNode, PEGEdge>::new(),
         };
         result.add_system(sys);
         result
@@ -204,7 +240,7 @@ impl <'a> RuleNode<'a> {
     }
 
     fn label(&self) -> &'a Option<Identifier> {
-        if let NodeForm::Rule { ref label, .. } = self.1.peg.graph[self.0] {
+        if let PEGNode::Rule { ref label, .. } = self.1.peg.graph[self.0] {
             label
         } else {
             panic!("RuleNode invariant violated!")
@@ -212,7 +248,7 @@ impl <'a> RuleNode<'a> {
     }
 
     fn quantified(&self) -> &'a Vec<Identifier> {
-        if let NodeForm::Rule { ref quantified, .. } = self.1.peg.graph[self.0] {
+        if let PEGNode::Rule { ref quantified, .. } = self.1.peg.graph[self.0] {
             quantified
         } else {
             panic!("RuleNode invariant violated!")
@@ -253,7 +289,7 @@ struct OperationNode<'a>(NodeIndex, &'a EPEG);
 
 impl <'a> OperationNode<'a> {
     fn operation(&self) -> &'a rs::Operation {
-        if let NodeForm::Operation { index } = self.1.peg.graph[self.0] {
+        if let PEGNode::Operation { index } = self.1.peg.graph[self.0] {
             &(self.1.peg.system.ops[index])
         } else {
             panic!("OperationNode invariant violated!")
@@ -284,7 +320,7 @@ struct VarNode<'a>(NodeIndex, &'a EPEG);
 
 impl <'a> VarNode<'a> {
     fn name(&self) -> Identifier {
-        if let NodeForm::Var { ref name } = self.1.peg.graph[self.0] {
+        if let PEGNode::Var { ref name } = self.1.peg.graph[self.0] {
             name.clone()
         } else {
             panic!("VarNode invariant violated!")
@@ -319,7 +355,8 @@ impl EPEG {
     fn child_edges(&self, ix: NodeIndex) -> Vec<(Option<usize>, NodeIndex)> {
         let mut result = Vec::new();
         for edge in self.peg.graph.edges_directed(ix, Direction::Outgoing) {
-            result.push((*edge.weight(), edge.target()));
+            let PEGEdge(w) = *edge.weight();
+            result.push((w, edge.target()));
         }
         result
     }
@@ -329,7 +366,7 @@ impl EPEG {
         // FIXME: maybe change these checks to asserts?
 
         // The node referenced by `ix` must be a system node.
-        if let NodeForm::System = self.peg.graph[ix] {
+        if let PEGNode::System = self.peg.graph[ix] {
             for (weight, _child) in self.child_edges(ix) {
                 // A system node should never have an outgoing weighted edge.
                 if weight.is_some() {
@@ -348,7 +385,7 @@ impl EPEG {
         // FIXME: maybe change these checks to asserts?
 
         // The node referenced by `ix` must be a rule node.
-        if let NodeForm::Rule { .. } = self.peg.graph[ix] {
+        if let PEGNode::Rule { .. } = self.peg.graph[ix] {
             let children = self.child_edges(ix);
 
             // A rule node must have exactly two outgoing edges.
@@ -377,7 +414,7 @@ impl EPEG {
         // FIXME: maybe change these checks to asserts?
 
         // The node referenced by `ix` must be a composition node.
-        if let NodeForm::Composition { .. } = self.peg.graph[ix] {
+        if let PEGNode::Composition { .. } = self.peg.graph[ix] {
             let children = self.child_edges(ix);
 
             // A composition node must have exactly two outgoing edges.
@@ -406,7 +443,7 @@ impl EPEG {
         // FIXME: maybe change these checks to asserts?
 
         // The node referenced by `ix` must be a operation node.
-        if let NodeForm::Operation { .. } = self.peg.graph[ix] {
+        if let PEGNode::Operation { .. } = self.peg.graph[ix] {
             let children = self.child_edges(ix);
 
             let mut weights = HashSet::new();
@@ -436,7 +473,7 @@ impl EPEG {
         // FIXME: maybe change these checks to asserts?
 
         // The node referenced by `ix` must be a variable node.
-        if let NodeForm::Var { .. } = self.peg.graph[ix] {
+        if let PEGNode::Var { .. } = self.peg.graph[ix] {
             // A variable node must not have any outgoing edges.
             if !(self.child_edges(ix).is_empty()) {
                 return None;
@@ -904,7 +941,7 @@ mod tests {
         }
 
         use petgraph::dot::{Dot};
-        println!("{:?}", Dot::with_config(&peg.graph, &[]));
+        println!("{}", Dot::with_config(&peg.graph, &[]));
     }
 }
 

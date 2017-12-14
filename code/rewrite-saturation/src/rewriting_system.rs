@@ -13,7 +13,7 @@ pub struct RewritingSystem {
     /// FIXME: doc
     pub eqs: Vec<Equation>,
     /// FIXME: doc
-    pub rls: Vec<Rule>,
+    pub rules: Vec<Rule>,
 }
 
 /// FIXME: doc
@@ -42,7 +42,7 @@ pub struct Operation {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Equation {
     /// A list of identifiers used on either side of this equation.
-    pub quantified_variables: Vec<Identifier>,
+    pub quantified: Vec<Identifier>,
     /// The left-hand-side of this equation.
     pub left: Term,
     /// The right-hand-side of this equation.
@@ -66,7 +66,7 @@ pub struct GenRule<Label, Var> {
     pub target: GenTerm<Var>,
 }
 
-impl<Label, Var> GenRule<Label, Var> {
+impl <Label, Var> GenRule<Label, Var> {
     /// FIXME: doc
     pub fn new(
         label: Option<Label>,

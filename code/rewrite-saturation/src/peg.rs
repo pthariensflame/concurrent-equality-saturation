@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 
 use std::collections::*;
-use std::iter::FromIterator;
+use std::iter::*;
 use itertools::Either;
 use petgraph::prelude::*;
 use super::rewriting_system as rs;
@@ -42,9 +42,78 @@ pub enum NodeForm {
 #[derive(Debug, Clone)]
 pub struct PEG {
     /// FIXME: doc
-    pub original_system: rs::RewritingSystem,
+    pub system: rs::RewritingSystem,
     /// FIXME: doc
     pub graph: DiGraph<NodeForm, Option<usize>>,
+}
+
+impl PEG {
+    // FIXME: doc
+    fn add_term(&mut self, term: &rs::Term) -> NodeIndex {
+        match *term {
+            rs::GenTerm::Op { ref head, ref args } => {
+                let index: usize = {
+                    let mut temp: i64 = -1;
+                    for (i, op) in self.system.ops.iter().enumerate() {
+                        if op.name == *head {
+                            temp = i as i64;
+                            break;
+                        }
+                    }
+                    if temp < 0 {
+                        panic!("Invalid operation name in term!");
+                    }
+                    temp as usize
+                };
+                let op_node_data = NodeForm::Operation { index };
+                let op_node = self.graph.add_node(op_node_data);
+                for (i, arg) in args.iter().enumerate() {
+                    let child = self.add_term(arg);
+                    self.graph.add_edge(op_node, child, Some(i));
+                }
+                op_node
+            },
+            rs::GenTerm::Var { ref name } => {
+                let var_node_data = NodeForm::Var { name: name.clone() };
+                let var_node = self.graph.add_node(var_node_data);
+                var_node
+            },
+        }
+    }
+
+    // FIXME: doc
+    fn add_rule(&mut self, rule: &rs::Rule) -> NodeIndex {
+        let rule_node_data = NodeForm::Rule {
+            label: rule.label.clone(),
+            quantified: Vec::from_iter(rule.quantified.iter().cloned()),
+        };
+        let rule_node = self.graph.add_node(rule_node_data);
+        let lhs_node = self.add_term(&(rule.source));
+        let rhs_node = self.add_term(&(rule.target));
+        self.graph.add_edge(rule_node, lhs_node, Some(1));
+        self.graph.add_edge(rule_node, rhs_node, Some(2));
+        rule_node
+    }
+
+    // FIXME: doc
+    fn add_system(&mut self, system: &rs::RewritingSystem) -> NodeIndex {
+        let sys_node = self.graph.add_node(NodeForm::System);
+        for rule in system.rules.clone() {
+            let rule_node = self.add_rule(&rule);
+            self.graph.add_edge(sys_node, rule_node, None);
+        }
+        sys_node
+    }
+
+    /// FIXME: doc
+    pub fn new(sys: &rs::RewritingSystem) -> PEG {
+        let mut result = PEG {
+            system: sys.clone(),
+            graph: DiGraph::<NodeForm, Option<usize>>::new(),
+        };
+        result.add_system(sys);
+        result
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -56,6 +125,16 @@ pub struct EPEG {
     pub peg: PEG,
     /// FIXME: doc
     pub equiv_classes: HashSet<BTreeSet<NodeIndex>>,
+}
+
+impl EPEG {
+    /// FIXME: doc
+    pub fn new(peg: &PEG) -> EPEG {
+        EPEG {
+            peg: peg.clone(),
+            equiv_classes: HashSet::new(),
+        }
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -168,7 +247,7 @@ struct OperationNode<'a>(NodeIndex, &'a EPEG);
 impl <'a> OperationNode<'a> {
     fn operation(&self) -> &'a rs::Operation {
         if let NodeForm::Operation { index } = self.1.peg.graph[self.0] {
-            &(self.1.peg.original_system.ops[index])
+            &(self.1.peg.system.ops[index])
         } else {
             panic!("OperationNode invariant violated!")
         }
@@ -619,6 +698,191 @@ impl EPEG {
             }
         }
         result
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    enum UTerm {
+        UVar(String),
+        UApply(String, Vec<UTerm>),
+    }
+
+    fn uvar(name: &str) -> UTerm {
+        UTerm::UVar(name.to_string())
+    }
+
+    fn uconst(name: &str) -> UTerm {
+        UTerm::UApply(name.to_string(), vec![])
+    }
+
+    fn uapply(name: &str, args: Vec<UTerm>) -> UTerm {
+        UTerm::UApply(name.to_string(), args)
+    }
+
+    impl UTerm {
+        fn infer_vars(&self) -> BTreeSet<Identifier> {
+            match *self {
+                UTerm::UVar(ref v) => {
+                    let mut result = BTreeSet::new();
+                    result.insert(Identifier::from(v.clone()));
+                    result
+                },
+                UTerm::UApply(_, ref args) => {
+                    let mut result = BTreeSet::new();
+                    for arg in args {
+                        for var in arg.infer_vars() {
+                            result.insert(var);
+                        }
+                    }
+                    result
+                },
+            }
+        }
+
+        fn infer_ops(&self) -> BTreeSet<(Identifier, usize)> {
+            match *self {
+                UTerm::UVar(_) => BTreeSet::new(),
+                UTerm::UApply(ref f, ref args) => {
+                    let mut result = BTreeSet::new();
+                    result.insert((Identifier::from(f.clone()), args.len()));
+                    for arg in args {
+                        for op in arg.infer_ops() {
+                            result.insert(op);
+                        }
+                    }
+                    result
+                },
+            }
+        }
+
+        fn to_term(&self) -> rs::Term {
+            match *self {
+                UTerm::UVar(ref v) => {
+                    rs::GenTerm::Var {
+                        name: Identifier::from(v.clone())
+                    }
+                },
+                UTerm::UApply(ref f, ref args) => {
+                    rs::GenTerm::Op {
+                        head: Identifier::from(f.clone()),
+                        args: args.iter().map(|a| a.to_term()).collect(),
+                    }
+                },
+            }
+        }
+    }
+
+    struct URule(Option<String>, UTerm, UTerm);
+
+    impl URule {
+        fn infer_ops(&self) -> BTreeSet<(Identifier, usize)> {
+            let mut result = BTreeSet::new();
+
+            for lhs_op in self.1.infer_ops() {
+                result.insert(lhs_op);
+            }
+
+            for rhs_op in self.2.infer_ops() {
+                result.insert(rhs_op);
+            }
+
+            result
+        }
+
+        fn to_rule(&self) -> rs::Rule {
+            rs::GenRule::new(
+                self.0.clone().map(|x| Identifier::from(x)),
+                self.1.to_term(),
+                self.2.to_term(),
+            )
+        }
+    }
+
+    fn make_simple_rs(rules_vec: &[URule]) -> rs::RewritingSystem {
+        let u = rs::Sort {
+            name: Identifier::from("U"),
+            supersorts: vec![],
+        };
+
+        let ops = {
+            let ops_set: BTreeSet<(Identifier, usize)> = {
+                let mut temp = BTreeSet::new();
+
+                for rule in rules_vec {
+                    for op in rule.infer_ops() {
+                        temp.insert(op);
+                    }
+                }
+
+                temp
+            };
+
+            let mut temp = Vec::new();
+
+            for (name, arity) in ops_set {
+                temp.push(rs::Operation {
+                    name: Identifier::from(name),
+                    arg_sorts: repeat(u.name.clone()).take(arity).collect(),
+                    result_sort: u.name.clone(),
+                    frozenness: rs::Frozenness::Unfrozen,
+                });
+            }
+
+            temp
+        };
+
+        let rules = rules_vec.iter().map(|x| x.to_rule()).collect();
+
+        rs::RewritingSystem {
+            sorts: vec![u],
+            ops: ops,
+            eqs: vec![],
+            rules: rules,
+        }
+    }
+
+    #[test]
+    fn monoid_example() {
+        let rewriting_system = make_simple_rs(&[
+            // A useless rule that can be deleted.
+            URule(None,
+                  uapply("succ", vec![uvar("x")]),
+                  uapply("succ", vec![uvar("x")])),
+            URule(Some("+-0-left-identity".to_string()),
+                  uapply("_+_", vec![uconst("0"), uvar("x")]),
+                  uvar("x")),
+            URule(Some("+-0-right-identity".to_string()),
+                  uapply("_+_", vec![uvar("x"), uconst("0")]),
+                  uvar("x")),
+            URule(Some("+-commutativity".to_string()),
+                  uapply("_+_", vec![uvar("x"), uvar("y")]),
+                  uapply("_+_", vec![uvar("y"), uvar("x")])),
+            URule(Some("+-associativity".to_string()),
+                  uapply("_+_", vec![
+                      uapply("_+_", vec![uvar("x"), uvar("y")]),
+                      uvar("z")]),
+                  uapply("_+_", vec![
+                      uvar("x"),
+                      uapply("_+_", vec![uvar("y"), uvar("z")])])),
+            URule(None,
+                  uapply("_+_", vec![
+                      uvar("x"),
+                      uapply("succ", vec![uvar("y")])]),
+                  uapply("succ", vec![
+                      uapply("_+_", vec![uvar("x"), uvar("y")])]))
+        ]);
+
+        let peg = PEG::new(&rewriting_system);
+
+        let epeg = EPEG::new(&peg);
+
+        // use petgraph::dot::{Dot};
+        // println!("{:?}", Dot::with_config(&peg.graph, &[]));
     }
 }
 

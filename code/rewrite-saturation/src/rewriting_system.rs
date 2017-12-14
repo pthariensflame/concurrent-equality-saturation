@@ -66,7 +66,25 @@ pub struct GenRule<Label, Var> {
     pub target: GenTerm<Var>,
 }
 
-impl <Label, Var> GenRule<Label, Var> {
+impl <Label, Var> GenRule<Label, Var> where Var: Clone {
+    pub fn map_label<X>(&self, func: &Fn(&Label) -> X) -> GenRule<X, Var> {
+        let label = {
+            if let Some(ref x) = self.label {
+                Some(func(&x))
+            } else {
+                None
+            }
+        };
+        GenRule {
+            label: label,
+            quantified: self.quantified.clone(),
+            source: self.source.clone(),
+            target: self.target.clone(),
+        }
+    }
+}
+
+impl <Label, Var> GenRule<Label, Var> {    
     /// FIXME: doc
     pub fn new(
         label: Option<Label>,

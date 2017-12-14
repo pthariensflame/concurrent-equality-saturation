@@ -1,5 +1,6 @@
 // -----------------------------------------------------------------------------
 
+use std::fmt;
 use std::collections::*;
 use std::iter::*;
 use itertools::Either;
@@ -34,6 +35,12 @@ pub enum NodeForm {
         /// FIXME: doc
         name: Identifier,
     },
+}
+
+impl fmt::Display for NodeForm {
+    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
+        unimplemented!()
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -881,8 +888,23 @@ mod tests {
 
         let epeg = EPEG::new(&peg);
 
-        // use petgraph::dot::{Dot};
-        // println!("{:?}", Dot::with_config(&peg.graph, &[]));
+        let pattern: RulePattern = ({
+            URule(None,
+                  uapply("_+_", vec![uvar("X"), uvar("Y")]),
+                  uvar("Z"))
+        }).to_rule().map_label(&|ref x| Either::Left((*x).clone()));
+
+        for node in epeg.peg.graph.node_indices() {
+            if let Some(subst) = epeg.unify_rule(node, pattern.clone()) {
+                println!("Matched:");
+                for sub in subst {
+                    println!("  {:?}", sub);
+                }
+            }
+        }
+
+        use petgraph::dot::{Dot};
+        println!("{:?}", Dot::with_config(&peg.graph, &[]));
     }
 }
 

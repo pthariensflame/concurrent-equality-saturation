@@ -32,6 +32,8 @@ impl<A: ?Sized> AsMut<A> for Void {
     }
 }
 
+pub mod bipartite;
+
 pub mod rewriting_system;
 
 pub mod peg;

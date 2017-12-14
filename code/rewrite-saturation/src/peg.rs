@@ -669,39 +669,46 @@ impl EPEG {
     // FIXME: doc
     fn unify_subsystem(
         &self,
-        substs: &mut Option<HashSet<Substitution>>,
+        substs: &mut Option<HashSet<Vec<Substitution>>>,
         ix: NodeIndex,
-        pats: HashSet<RulePattern>,
+        pats: Vec<RulePattern>,
     ) {
         fn search(
             epeg: &EPEG,
             rules: &[NodeIndex],
             pats: &[RulePattern],
-        ) -> Option<HashSet<Substitution>> {
-            let mut all = BTreeSet::new();
+        ) -> HashSet<Vec<Substitution>> {
+            use super::bipartite::*;
+
+            let mut bgraph: BGraph<NodeIndex, usize, Substitution>;
+            bgraph = BGraph::new();
+            
             for rule in rules {
-                let mut matches = BTreeSet::new();
+                bgraph.add_l_node(*rule);
                 for (i, pat) in pats.iter().enumerate() {
+                    bgraph.add_r_node(i);
                     if let Some(s) = epeg.unify_rule(*rule, pat.clone()) {
-                        matches.insert((i, s));
+                        bgraph.add_edge(*rule, i, s);
                     }
                 }
-                all.insert(matches);
+            }
+            
+            let ref g = bgraph.get_graph();
+            
+            let mut result = HashSet::new();
+            
+            for matching in bgraph.enum_perfect_matchings() {
+                let mut vec = Vec::new();
+                vec.reserve(pats.len());
+                for edge in matching {
+                    let (_, ix) = g.edge_endpoints(edge).unwrap();
+                    let i = g.node_weight(ix).unwrap().right().unwrap();
+                    vec[i] = g[edge].clone();
+                }
+                result.insert(vec);
             }
 
-            fn foo(
-                remaining: &[BTreeSet<(usize, Substitution)>],
-                allowed: BTreeSet<usize>,
-            ) -> HashSet<Substitution> {
-                unimplemented!()
-            }
-
-            // all :: Vec<BTreeSet<(usize, Substitution)>>
-            // req :: BTreeSet<usize>
-
-            // we need to find the set of all sections of `all` that have every
-            // `usize` in `req` such that no
-            unimplemented!()
+            result
         }
 
         if let Some(system_node) = self.match_system(ix) {
@@ -719,7 +726,7 @@ impl EPEG {
             for pat in pats {
                 patterns.push(pat);
             }
-            *substs = search(self, &rule_nodes, &patterns);
+            *substs = Some(search(self, &rule_nodes, &patterns));
         } else {
             *substs = None;
         }

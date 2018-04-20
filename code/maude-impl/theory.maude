@@ -1,0 +1,23 @@
+fmod AST is
+    pr QID .
+    sorts System Rule Equation Operation Var Term TermList .
+    subsorts Rule Equation < System .
+    subsorts Var < Term < TermList .
+    op emptySys : -> System [ctor] .
+    op _;_ : System System -> System [ctor assoc comm id: emptySys] .
+    op _===_ : Term Term -> Equation [ctor] .
+    op _==>_ : Term Term -> Rule [ctor] .
+    op _=[_]=>_ : Term Qid Term -> Rule [ctor] .
+    op nil : -> TermList [ctor] .
+    op _,_ : TermList TermList -> TermList [ctor assoc comm id: nil] .
+    op var : Qid -> Var [ctor] .
+    op opr : Qid -> Operation [ctor] .
+    op _$_ : Operation TermList -> Term [ctor] .
+    eq R::Rule ; R::Rule = R::Rule .
+    eq E::Equation ; E::Equation = E::Equation .
+endfm
+
+
+    
+fmod DAG{SPEC::GRAPH-SPEC} is
+endfm

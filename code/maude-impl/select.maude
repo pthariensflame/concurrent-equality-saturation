@@ -1,0 +1,11 @@
+in conv
+
+fth COST-METRIC is
+    pr INT .
+    pr AST .
+    op cost-metric : System -> Int .
+endfth
+
+fmod AST-SELECTION{CM :: COST-METRIC} is
+    pr AST-EXTRACTION .
+endfm

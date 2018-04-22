@@ -1,0 +1,75 @@
+fmod AST is
+    pr QID .
+    sorts System Rule Equation Operation Var Term TermList .
+    subsorts Rule Equation < System .
+    subsorts Var < Term < TermList .
+    op emptySys : -> System [ctor] .
+    op _;_ : System System -> System [ctor assoc comm id: emptySys] .
+    op _===_ : Term Term -> Equation [ctor] .
+    op _==>_ : Term Term -> Rule [ctor] .
+    op _=[_]=>_ : Term Qid Term -> Rule [ctor] .
+    op nil : -> TermList [ctor] .
+    op _,_ : TermList TermList -> TermList [ctor assoc comm id: nil] .
+    op var : Qid -> Var [ctor] .
+    op opr : Qid -> Operation [ctor] .
+    op _$_ : Operation TermList -> Term [ctor] .
+    eq R::Rule ; R::Rule = R::Rule .
+    eq E::Equation ; E::Equation = E::Equation .
+endfm
+
+fth GRAPH-SPEC is
+    sorts NodeData EdgeData .
+endfth
+
+fmod GRAPH{S :: GRAPH-SPEC} is
+    pr NAT .
+    sorts Node{S} Edge{S} Graph{S} .
+    subsorts Edge{S} < Graph{S} .
+    op _@_ : Nat S$NodeData -> Node{S} .
+    op _through_to_ : Node{S} S$EdgeData Node{S} -> Edge{S} [ctor] .
+    op empty : -> Graph{S} [ctor] .
+    op _;_ : Graph{S} Graph{S} -> Graph{S} [ctor assoc comm id: empty] .
+    op nextId : Graph{S} -> Nat .
+    vars ND0 ND1 : S$NodeData .
+    vars I0 I1 : Nat .
+    var E : Edge{S} .
+    var ED : S$EdgeData .
+    var G : Graph{S} .
+    eq E E = E .
+    eq nextId(empty) = 0 .
+    eq nextId(((I0 @ ND0) through ED to (I1 @ ND1)) ; G) = max(max(I0, I1), nextId(G)) .
+endfm
+
+fmod PEG-SPEC is
+    pr NAT . pr QID .
+    sorts SystemD RuleD CompositionD OperationD VarD NodeData Nothing EdgeData .
+    subsorts System Rule Composition Operation Var < NodeData .
+    subsorts Nothing Nat < EdgeData .
+    op nothing : -> Nothing [ctor] .
+    op [-] : -> SystemD [ctor] .
+    
+endfm
+
+view PEGSpec from GRAPH-SPEC to PEG-SPEC is
+endv
+
+fmod PEG is
+    including PEG-SPEC .
+    including GRAPH{PEGSpec} .
+    op _into_ : NodeData NodeData -> Edge .
+    vars N0 N1 : NodeData .
+    eq N0 into N1 = N0 through nothing to N1 .
+endfm
+
+view EPEGSpec from GRAPH-SPEC to EPEG-SPEC is
+endv
+
+fmod EPEG is
+    including EPEG-SPEC .
+    including GRAPH{EPEGSpec} .
+    op _into_ : Node Node -> Edge .
+    op _,_ : Node Node -> Node [ctor assoc comm] .
+    vars N0 N1 : Node .
+    eq N0 into N1 = N0 through nothing to N1 .
+    eq N0 , N0 = N0 .
+endfm

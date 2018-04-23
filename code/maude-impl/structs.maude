@@ -21,30 +21,24 @@ fth GRAPH-SPEC is
     sorts NodeData EdgeData .
 endfth
 
-fmod EGRAPH{S :: GRAPH-SPEC} is
+fmod GRAPH{S :: GRAPH-SPEC} is
     pr NAT .
-    sorts Node{S} Edge{S} Graph{S} ENode{S} EEdge{S} EGraph{S} .
-    subsorts Node{S} < ENode{S} .
-    subsorts Edge{S} < Graph{S} EEdge{S} < EGraph{S} .
+    sorts Node{S} Edge{S} Graph{S} .
+    subsorts Edge{S} < Graph{S} .
     op _@_ : Nat S$NodeData -> Node{S} [prec 30] .
-    op _through_to_ : ENode{S} S$EdgeData ENode{S} -> EEdge{S} [ctor prec 34] .
-    op _through_to_ : Node{S} S$EdgeData Node{S} -> Edge{S} [ctor ditto] .
+    op _through_to_ : Node{S} S$EdgeData Node{S} -> Edge{S} [ctor prec 34] .
     op empty : -> Graph{S} [ctor] .
-    op _;_ : EGraph{S} EGraph{S} -> EGraph{S} [ctor assoc comm id: empty prec 36] .
-    op _;_ : Graph{S} Graph{S} -> Graph{S} [ctor ditto] .
-    op _,_ : ENode{S} ENode{S} -> ENode{S} [ctor assoc comm prec 32] .
-    ops nextId nextIdAux : EGraph{S} -> Nat .
+    op _;_ : Graph{S} Graph{S} -> Graph{S} [ctor assoc comm id: empty prec 36] .
+    ops nextId nextIdAux : Graph{S} -> Nat .
     vars I0 I1 : Nat .
     vars ND0 ND1 : S$NodeData .
-    vars N0 N1 : ENode{S} .
+    vars N0 N1 : Node{S} .
     var ED : S$EdgeData .
-    var E : EEdge{S} .
-    var G : EGraph{S} .
+    var E : Edge{S} .
+    var G : Graph{S} .
     eq E ; E = E .
-    eq N0 , N0 = N0 .
     eq nextIdAux(empty) = 0 .
     eq nextIdAux(((I0 @ ND0) through ED to (I1 @ ND1)) ; G) = max(max(I0, I1), nextId(G)) .
-    eq nextIdAux((((I0 @ ND0) , N0) through ED to ((I1 @ ND1) , N1)) ; G) = max(max(I0, I1), nextId((N0 through ED to N1) ; G)) .
     eq nextId(G) = nextIdAux(G) + 1 .
 endfm
 
@@ -66,19 +60,27 @@ endfm
 view PEGSpec from GRAPH-SPEC to PEG-SPEC is
 endv
 
-fmod EPEG is
-    pr PEG-SPEC + EGRAPH{PEGSpec} * (
-        sort Node{PEGSpec} to Node,
-        sort Edge{PEGSpec} to Edge,
-        sort Graph{PEGSpec} to Graph,
-        sort ENode{PEGSpec} to ENode,
-        sort EEdge{PEGSpec} to EEdge,
-        sort EGraph{PEGSpec} to EGraph
+fmod PEG is
+    pr PEG-SPEC + GRAPH{PEGSpec} * (
+        sort Node{PEGSpec} to PNode,
+        sort Edge{PEGSpec} to PEdge,
+        sort Graph{PEGSpec} to Peg .
     ) .
-    op _into_ : ENode ENode -> EEdge [prec 34] .
-    op _into_ : Node Node -> Edge [ditto] .
-    vars N0 N1 : Node .
-    vars EN0 EN1 : ENode .
+    op _into_ : PNode PNode -> PEdge [prec 34] .
+    vars N0 N1 : PNode .
     eq N0 into N1 = N0 through nothing to N1 .
-    eq EN0 into EN1 = EN0 through nothing to EN1 .
+endfm
+
+fmod EPEG is
+    pr PEG .
+    sorts EPeg EquivClass EquivClasses .
+    subsorts Nat < EquivClass < EquivClasses .
+    op __ : EquivClass EquivClass -> EquivClasses [ctor assoc comm prec 38] .
+    op _,_ : EquivClasses EquivClasses -> EquivClasses [ctor assoc comm prec 40] .
+    op _*!_ : Peg EquivClasses -> EPeg [ctor prec 42] .
+    var I : Nat .
+    var EC : EquivClass .
+    var ECS : EquivClasses .
+    eq I I = I .
+    eq EC , EC = EC .
 endfm

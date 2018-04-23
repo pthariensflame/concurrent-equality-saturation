@@ -1,18 +1,19 @@
 in structs
 
-fmod AST-CONVERSION is
+fmod AST-CONVERSION-IN is
     pr AST .
     pr EPEG .
     sort ConvReturn .
     op _|%|_ : Graph Node -> ConvReturn [ctor prec 40] .
     op graphPart : ConvReturn -> Graph .
     op nodePart : ConvReturn -> Node .
-    op convert : System -> ConvReturn .
+    op convert : System -> EPeg .
     op addConv : System Graph -> ConvReturn .
     op addConv : Rule Graph -> ConvReturn [ditto] .
     op addConv : Var Graph -> ConvReturn .
     op addConv : Term Graph -> ConvReturn [ditto] .
     op addConvAux : Term Graph Nat -> ConvReturn .
+    op trivClasses : Graph -> EquivClasses .
     vars N N0 N1 N2 : Node .
     var E : Edge .
     vars G G0 G1 : Graph .
@@ -27,7 +28,7 @@ fmod AST-CONVERSION is
     var V : Var .
     eq graphPart(G |%| N) = G .
     eq nodePart(G |%| N) = N .
-    eq convert(S) = addConv(S, empty) .
+    ceq convert(S) = G *! trivClasses(G) if G := graphPart(addConv(S, empty)) .
     eq addConv(emptySys, (I @ sysD through nothing to N ; G)) = (I @ sysD into N ; G) |%| I @ sysD .
     eq addConv(emptySys, empty) = empty |%| 0 @ sysD .
     ceq addConv((R ; S), G) = addConv(S, G0)
@@ -48,11 +49,7 @@ fmod AST-CONVERSION is
     eq addConv(var(Q), G) = G |%| nextId(G) @ varD(Q) .
 endfm
 
-fmod AST-EXTRACTION is
+fmod AST-CONVERSION-OUT is
     pr AST .
     pr EPEG .
-    pr SET{System} .
-    op extractAll : EGraph -> NeSet{System} .
-    op extractRule : EGraph Node -> Rule .
-    op extractTerm : EGraph Node -> Term .
 endfm

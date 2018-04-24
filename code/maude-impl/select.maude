@@ -2,7 +2,7 @@ in conv
 
 fth COST-METRIC is
     pr INT .
-    pr EPEG .
+    pr AST .
     op cost-metric : System -> Int .
 endfth
 

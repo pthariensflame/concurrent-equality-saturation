@@ -17,6 +17,34 @@ fmod AST is
     eq E::Equation ; E::Equation = E::Equation .
 endfm
 
+view System from TRIV to AST is
+    sort Elt to System .
+endv
+
+view Rule from TRIV to AST is
+    sort Elt to Rule .
+endv
+
+view Equation from TRIV to AST is
+    sort Elt to Equation .
+endv
+
+view Operation from TRIV to AST is
+    sort Elt to Operation .
+endv
+
+view Var from TRIV to AST is
+    sort Elt to Var .
+endv
+
+view Term from TRIV to AST is
+    sort Elt to Term .
+endv
+
+view TermList from TRIV to AST is
+    sort Elt to TermList .
+endv
+
 fth GRAPH-SPEC is
     sorts NodeData EdgeData .
 endfth
@@ -62,12 +90,12 @@ endv
 
 fmod PEG is
     pr PEG-SPEC + GRAPH{PEGSpec} * (
-        sort Node{PEGSpec} to PNode,
-        sort Edge{PEGSpec} to PEdge,
-        sort Graph{PEGSpec} to Peg .
+        sort Node{PEGSpec} to Node,
+        sort Edge{PEGSpec} to Edge,
+        sort Graph{PEGSpec} to Graph
     ) .
-    op _into_ : PNode PNode -> PEdge [prec 34] .
-    vars N0 N1 : PNode .
+    op _into_ : Node Node -> Edge [prec 34] .
+    vars N0 N1 : Node .
     eq N0 into N1 = N0 through nothing to N1 .
 endfm
 
@@ -77,7 +105,7 @@ fmod EPEG is
     subsorts Nat < EquivClass < EquivClasses .
     op __ : EquivClass EquivClass -> EquivClasses [ctor assoc comm prec 38] .
     op _,_ : EquivClasses EquivClasses -> EquivClasses [ctor assoc comm prec 40] .
-    op _*!_ : Peg EquivClasses -> EPeg [ctor prec 42] .
+    op _*!_ : Graph EquivClasses -> EPeg [ctor prec 42] .
     var I : Nat .
     var EC : EquivClass .
     var ECS : EquivClasses .

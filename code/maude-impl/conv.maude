@@ -4,7 +4,7 @@ fmod AST-CONVERSION-IN is
     pr AST .
     pr EPEG .
     sort ConvReturn .
-    op _|%|_ : Graph Node -> ConvReturn [ctor prec 40] .
+    op _|%|_ : Graph Node -> ConvReturn [ctor prec 42] .
     op graphPart : ConvReturn -> Graph .
     op nodePart : ConvReturn -> Node .
     op convert : System -> EPeg .
@@ -15,17 +15,20 @@ fmod AST-CONVERSION-IN is
     op addConvAux : Term Graph Nat -> ConvReturn .
     op trivClasses : Graph -> EquivClasses .
     vars N N0 N1 N2 : Node .
+    vars ND0 ND1 : NodeData .
     var E : Edge .
+    var ED : EdgeData .
     vars G G0 G1 : Graph .
     var S : System .
     var R : Rule .
     var EQ : Equation .
     vars T T0 T1 : Term .
     var Q : Qid .
-    vars I K : Nat .
+    vars I J K : Nat .
     var TL : TermList .
     var O : Operation .
     var V : Var .
+    var ECS : EquivClasses .
     eq graphPart(G |%| N) = G .
     eq nodePart(G |%| N) = N .
     ceq convert(S) = G *! trivClasses(G) if G := graphPart(addConv(S, empty)) .
@@ -47,9 +50,51 @@ fmod AST-CONVERSION-IN is
     ceq addConvAux((oper(Q) ! (T , TL)), G, K) = G1 ; N through K to N0 |%| N
       if G0 |%| N0 := addConv(T, G) /\ G1 |%| N := addConvAux((oper(Q) ! TL), G0, K + 1) .
     eq addConv(var(Q), G) = G |%| nextId(G) @ varD(Q) .
+    ceq trivClasses(E) = I , J
+      if I @ ND0 through ED to J @ ND1 := E .
+    ceq trivClasses(E ; G) = I , J , ECS
+      if I @ ND0 through ED to J @ ND1 := E /\ ECS := trivClasses(G) .
 endfm
 
 fmod AST-CONVERSION-OUT is
     pr AST .
     pr EPEG .
+    sorts SystemSet RuleSet TermSet .
+    subsorts System < SystemSet .
+    subsorts Rule < RuleSet .
+    subsorts Term < TermSet .
+    op extractAll : EPeg -> SystemSet .
+    op findSystemClass : EquivClasses -> EquivClass .
+    op findClassOf : EquivClasses Nat -> EquivClass .
+    op extractSystemUnder : EPeg Nat -> System .
+    op extractSystemsUnder : EPeg EquivClass -> SystemSet .
+    op extractRuleUnder : EPeg Nat -> Rule .
+    op extractRulesUnder : EPeg Nat -> RuleSet .
+    op extractTermUnder : EPeg Nat -> Term .
+    op extractTermsUnder : EPeg Nat -> TermSet .
+    op __ : SystemSet SystemSet -> SystemSet [ctor assoc comm prec 44] .
+    op __ : RuleSet RuleSet -> RuleSet [ctor assoc comm prec 44] .
+    op __ : TermSet TermSet -> TermSet [ctor assoc comm prec 44] .
+    var EP : EPeg .
+    vars G G0 : Graph .
+    vars EC EC0 : EquivClass .
+    var ECS : EquivClasses .
+    vars I J K : Nat .
+    var N : Node .
+    var ND : NodeData .
+    var ED : EdgeData .
+    var Q : Qid .
+    var S : System .
+    var R : Rule .
+    var T : Term .
+    eq S S = S .
+    eq R R = R .
+    eq T T = T .
+    eq extractAll(EP) = extractSystemsUnder(EP, findSystemClass(EP)) .
+    eq findSystemClass(ECS) = findClassOf(ECS, 0) .
+    eq findClassOf((I EC , ECS), I) = I EC .
+    eq findClassOf((I EC), I) = I EC .
+    eq findClassOf((I , ECS), I) = I .
+    eq findClassOf(I, I) = I .
+    eq extractTermUnder((N through K to I @ varD(Q)) ; G *! (I , ECS), I) = varD(Q) .
 endfm

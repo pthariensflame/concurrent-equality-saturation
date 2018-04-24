@@ -102,13 +102,13 @@ endfm
 fmod EPEG is
     pr PEG .
     sorts EPeg EquivClass EquivClasses .
-    subsorts Nat < EquivClass < EquivClasses .
+    subsorts Node < EquivClass < EquivClasses .
     op __ : EquivClass EquivClass -> EquivClasses [ctor assoc comm prec 38] .
     op _,_ : EquivClasses EquivClasses -> EquivClasses [ctor assoc comm prec 40] .
     op _*!_ : Graph EquivClasses -> EPeg [ctor prec 42] .
-    var I : Nat .
+    var N : Node .
     var EC : EquivClass .
     var ECS : EquivClasses .
-    eq I I = I .
+    eq N N = N .
     eq EC , EC = EC .
 endfm

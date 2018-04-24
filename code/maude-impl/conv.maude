@@ -50,51 +50,72 @@ fmod AST-CONVERSION-IN is
     ceq addConvAux((oper(Q) ! (T , TL)), G, K) = G1 ; N through K to N0 |%| N
       if G0 |%| N0 := addConv(T, G) /\ G1 |%| N := addConvAux((oper(Q) ! TL), G0, K + 1) .
     eq addConv(var(Q), G) = G |%| nextId(G) @ varD(Q) .
-    ceq trivClasses(E) = I , J
-      if I @ ND0 through ED to J @ ND1 := E .
-    ceq trivClasses(E ; G) = I , J , ECS
-      if I @ ND0 through ED to J @ ND1 := E /\ ECS := trivClasses(G) .
+    ceq trivClasses(E) = N0 , N1
+      if N0 through ED to N1 := E .
+    ceq trivClasses(E ; G) = N0 , N1 , ECS
+      if N0 through ED to N1 := E /\ ECS := trivClasses(G) .
 endfm
 
 fmod AST-CONVERSION-OUT is
     pr AST .
     pr EPEG .
-    sorts SystemSet RuleSet TermSet .
+    sorts SystemSet RuleSet TermSet MaybeNode NodeList .
     subsorts System < SystemSet .
     subsorts Rule < RuleSet .
     subsorts Term < TermSet .
+    subsorts Node < MaybeNode < NodeList .
     op extractAll : EPeg -> SystemSet .
     op findSystemClass : EquivClasses -> EquivClass .
-    op findClassOf : EquivClasses Nat -> EquivClass .
-    op extractSystemUnder : EPeg Nat -> System .
+    op findClassOf : EquivClasses Node -> EquivClass .
+    op extractSystemUnder : EPeg Node -> System .
     op extractSystemsUnder : EPeg EquivClass -> SystemSet .
-    op extractRuleUnder : EPeg Nat -> Rule .
-    op extractRulesUnder : EPeg Nat -> RuleSet .
-    op extractTermUnder : EPeg Nat -> Term .
-    op extractTermsUnder : EPeg Nat -> TermSet .
+    op extractRuleUnder : EPeg Node -> Rule .
+    op extractRulesUnder : EPeg Node -> RuleSet .
+    op extractTermUnder : EPeg Node -> Term .
+    op extractTermsUnder : EPeg Node -> TermSet .
+    op extractTermListUnder : EPeg NodeList -> TermList .
+    op childrenOf : Graph Node -> NodeList .
+    op childrenOfAt : Graph Node Nat -> NodeList .
     op __ : SystemSet SystemSet -> SystemSet [ctor assoc comm prec 44] .
     op __ : RuleSet RuleSet -> RuleSet [ctor assoc comm prec 44] .
     op __ : TermSet TermSet -> TermSet [ctor assoc comm prec 44] .
+    op null : -> MaybeNode [ctor] .
+    op _;_ : NodeList NodeList -> NodeList [ctor assoc prec 44 id: null] .
     var EP : EPeg .
     vars G G0 : Graph .
     vars EC EC0 : EquivClass .
     var ECS : EquivClasses .
     vars I J K : Nat .
-    var N : Node .
+    vars N N0 : Node .
     var ND : NodeData .
     var ED : EdgeData .
     var Q : Qid .
     var S : System .
     var R : Rule .
     var T : Term .
+    var NL : NodeList .
     eq S S = S .
     eq R R = R .
     eq T T = T .
-    eq extractAll(EP) = extractSystemsUnder(EP, findSystemClass(EP)) .
-    eq findSystemClass(ECS) = findClassOf(ECS, 0) .
-    eq findClassOf((I EC , ECS), I) = I EC .
-    eq findClassOf((I EC), I) = I EC .
-    eq findClassOf((I , ECS), I) = I .
-    eq findClassOf(I, I) = I .
-    eq extractTermUnder((N through K to I @ varD(Q)) ; G *! (I , ECS), I) = varD(Q) .
+    ceq extractAll(EP) = extractSystemsUnder(EP, findSystemClass(ECS))
+      if G *! ECS := EP .
+    eq findSystemClass(((I @ sysD) EC , ECS)) = (I @ sysD) EC .
+    eq findSystemClass(((I @ sysD) EC)) = (I @ sysD) EC .
+    eq findSystemClass((I @ sysD , ECS)) = I @ sysD .
+    eq findSystemClass(I @ sysD) = I @ sysD .
+    eq findClassOf((N EC , ECS), N) = N EC .
+    eq findClassOf((N EC), N) = N EC .
+    eq findClassOf((N , ECS), N) = N .
+    eq findClassOf(N, N) = N .
+    eq extractTermUnder(G *! (I @ varD(Q) , ECS), I @ varD(Q)) = var(Q) .
+    eq extractTermUnder(G *! (I @ varD(Q) EC , ECS), I @ varD(Q)) = var(Q) .
+    eq extractTermUnder(G *! (I @ operD(Q) , ECS), I @ operD(Q)) = oper(Q) ! extractTermListUnder(G *! (I @ operD(Q) , ECS), childrenOf(G, I @ operD(Q))) .
+    eq extractTermUnder(G *! (I @ operD(Q) EC , ECS), I @ operD(Q)) = oper(Q) ! extractTermListUnder(G *! (I @ operD(Q) EC , ECS), childrenOf(G, I @ operD(Q))) .
+    eq extractTermListUnder(EP, null) = nil .
+    eq extractTermListUnder(EP, N ; NL) = extractTermUnder(EP, N) , extractTermListUnder(EP, NL) .
+    eq childrenOf(I @ sysD through nothing to N ; G, I @ sysD) = N ; childrenOf(G, I @ sysD) .
+    eq childrenOf(N through 0 to N0 ; G, N) = N0 ; childrenOfAt(G, N, 1) .
+    eq childrenOf(G, N) = null [owise] .
+    eq childrenOfAt(N through K to N0 ; G, N, K) = N0 ; childrenOfAt(G, N, K + 1) .
+    eq childrenOfAt(G, N, K) = null [owise] .
 endfm

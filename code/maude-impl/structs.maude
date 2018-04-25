@@ -13,8 +13,19 @@ fmod AST is
     op var : Qid -> Var [ctor] .
     op oper : Qid -> Operation [ctor] .
     op _!_ : Operation TermList -> Term [ctor prec 32] .
-    eq R::Rule ; R::Rule = R::Rule .
-    eq E::Equation ; E::Equation = E::Equation .
+    op equationsOf : System -> System .
+    op rulesOf : System -> System .
+    var R : Rule .
+    var E : Equation .
+    var S : System .
+    eq R ; R = R .
+    eq E ; E = E .
+    eq equationsOf(emptySys) = emptySys .
+    eq equationsOf(R ; S) = equationsOf(S) .
+    eq equationsOf(E ; S) = E ; equationsOf(S) .
+    eq rulesOf(emptySys) = emptySys .
+    eq rulesOf(R ; S) = R ; rulesOf(S) .
+    eq rulesOf(E ; S) = rulesOf(S) .
 endfm
 
 view System from TRIV to AST is

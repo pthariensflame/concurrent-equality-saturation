@@ -56,66 +56,64 @@ fmod AST-CONVERSION-IN is
       if N0 through ED to N1 := E /\ ECS := trivClasses(G) .
 endfm
 
-fmod AST-CONVERSION-OUT is
+mod AST-CONVERSION-OUT is
     pr AST .
     pr EPEG .
-    sorts SystemSet RuleSet TermSet MaybeNode NodeList .
-    subsorts System < SystemSet .
-    subsorts Rule < RuleSet .
-    subsorts Term < TermSet .
-    subsorts Node < MaybeNode < NodeList .
-    op extractAll : EPeg -> SystemSet .
-    op findSystemClass : EquivClasses -> EquivClass .
-    op findClassOf : EquivClasses Node -> EquivClass .
-    op extractSystemUnder : EPeg Node -> System .
-    op extractSystemsUnder : EPeg EquivClass -> SystemSet .
-    op extractRuleUnder : EPeg Node -> Rule .
-    op extractRulesUnder : EPeg Node -> RuleSet .
-    op extractTermUnder : EPeg Node -> Term .
-    op extractTermsUnder : EPeg Node -> TermSet .
-    op extractTermListUnder : EPeg NodeList -> TermList .
+    sorts NodeList .
+    subsorts Node < NodeList .
+    op extractSystem : EPeg Node -> System [frozen] .
+    op extractSystemAux : EPeg Node NodeList -> System [frozen] .
+    op extractRule : EPeg Node -> Rule [frozen] .
+    op extractTerm : EPeg Node -> Term [frozen] .
+    op extractTermList : EPeg NodeList -> TermList [frozen] .
+    op null : -> NodeList [ctor] .
+    op _~_ : NodeList NodeList -> NodeList [ctor assoc id: null prec 44] .
+    op extract : EPeg -> System [frozen] .
     op childrenOf : Graph Node -> NodeList .
     op childrenOfAt : Graph Node Nat -> NodeList .
-    op __ : SystemSet SystemSet -> SystemSet [ctor assoc comm prec 44] .
-    op __ : RuleSet RuleSet -> RuleSet [ctor assoc comm prec 44] .
-    op __ : TermSet TermSet -> TermSet [ctor assoc comm prec 44] .
-    op null : -> MaybeNode [ctor] .
-    op _;_ : NodeList NodeList -> NodeList [ctor assoc prec 44 id: null] .
     var EP : EPeg .
-    vars G G0 : Graph .
-    vars EC EC0 : EquivClass .
+    var G : Graph .
     var ECS : EquivClasses .
-    vars I J K : Nat .
-    vars N N0 : Node .
-    var ND : NodeData .
-    var ED : EdgeData .
+    var EC : EquivClass .
+    vars I I0 I1 J J0 J1 K : Nat .
+    vars N N0 N1 : Node .
+    vars NL NL0 : NodeList .
+    vars ND ND0 ND1 : NodeData .
+    vars SY : System .
+    vars R R0 R1 : Rule .
+    vars T T0 T1 : Term .
+    var TL : TermList .
     var Q : Qid .
-    var S : System .
-    var R : Rule .
-    var T : Term .
-    var NL : NodeList .
-    eq S S = S .
-    eq R R = R .
-    eq T T = T .
-    ceq extractAll(EP) = extractSystemsUnder(EP, findSystemClass(ECS))
-      if G *! ECS := EP .
-    eq findSystemClass(((I @ sysD) EC , ECS)) = (I @ sysD) EC .
-    eq findSystemClass(((I @ sysD) EC)) = (I @ sysD) EC .
-    eq findSystemClass((I @ sysD , ECS)) = I @ sysD .
-    eq findSystemClass(I @ sysD) = I @ sysD .
-    eq findClassOf((N EC , ECS), N) = N EC .
-    eq findClassOf((N EC), N) = N EC .
-    eq findClassOf((N , ECS), N) = N .
-    eq findClassOf(N, N) = N .
-    eq extractTermUnder(G *! (I @ varD(Q) , ECS), I @ varD(Q)) = var(Q) .
-    eq extractTermUnder(G *! (I @ varD(Q) EC , ECS), I @ varD(Q)) = var(Q) .
-    eq extractTermUnder(G *! (I @ operD(Q) , ECS), I @ operD(Q)) = oper(Q) ! extractTermListUnder(G *! (I @ operD(Q) , ECS), childrenOf(G, I @ operD(Q))) .
-    eq extractTermUnder(G *! (I @ operD(Q) EC , ECS), I @ operD(Q)) = oper(Q) ! extractTermListUnder(G *! (I @ operD(Q) EC , ECS), childrenOf(G, I @ operD(Q))) .
-    eq extractTermListUnder(EP, null) = nil .
-    eq extractTermListUnder(EP, N ; NL) = extractTermUnder(EP, N) , extractTermListUnder(EP, NL) .
-    eq childrenOf(I @ sysD through nothing to N ; G, I @ sysD) = N ; childrenOf(G, I @ sysD) .
-    eq childrenOf(N through 0 to N0 ; G, N) = N0 ; childrenOfAt(G, N, 1) .
+    eq extract(EP) = extractSystem(EP, 0 @ sysD) .
+    eq childrenOf(I @ sysD through nothing to N ; G, I @ sysD) = N ~ childrenOf(G, I @ sysD) .
+    eq childrenOf(N through 0 to N0 ; G, N) = N0 ~ childrenOfAt(G, N, 1) .
     eq childrenOf(G, N) = null [owise] .
-    eq childrenOfAt(N through K to N0 ; G, N, K) = N0 ; childrenOfAt(G, N, K + 1) .
+    eq childrenOfAt(N through K to N0 ; G, N, K) = N0 ~ childrenOfAt(G, N, K + 1) .
     eq childrenOfAt(G, N, K) = null [owise] .
-endfm
+    rl [extEquivSubst] : extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) EC , ECS), I0 @ ND0) => extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) EC , ECS), I1 @ ND1) .
+    rl [extEquivSubst] : extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) , ECS), I0 @ ND0) => extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) , ECS), I1 @ ND1) .
+    rl [extEquivSubst] : extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) EC), I0 @ ND0) => extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) EC), I1 @ ND1) .
+    rl [extEquivSubst] : extractSystem(G *! ((I0 @ ND0) (I1 @ ND1)), I0 @ ND0) => extractSystem(G *! ((I0 @ ND0) (I1 @ ND1)), I1 @ ND1) .
+    rl [extEquivSubst] : extractRule(G *! ((I0 @ ND0) (I1 @ ND1) EC , ECS), I0 @ ND0) => extractRule(G *! ((I0 @ ND0) (I1 @ ND1) EC , ECS), I1 @ ND1) .
+    rl [extEquivSubst] : extractRule(G *! ((I0 @ ND0) (I1 @ ND1) , ECS), I0 @ ND0) => extractRule(G *! ((I0 @ ND0) (I1 @ ND1) , ECS), I1 @ ND1) .
+    rl [extEquivSubst] : extractRule(G *! ((I0 @ ND0) (I1 @ ND1) EC), I0 @ ND0) => extractRule(G *! ((I0 @ ND0) (I1 @ ND1) EC), I1 @ ND1) .
+    rl [extEquivSubst] : extractRule(G *! ((I0 @ ND0) (I1 @ ND1)), I0 @ ND0) => extractRule(G *! ((I0 @ ND0) (I1 @ ND1)), I1 @ ND1) .
+    rl [extEquivSubst] : extractTerm(G *! ((I0 @ ND0) (I1 @ ND1) EC , ECS), I0 @ ND0) => extractTerm(G *! ((I0 @ ND0) (I1 @ ND1) EC , ECS), I1 @ ND1) .
+    rl [extEquivSubst] : extractTerm(G *! ((I0 @ ND0) (I1 @ ND1) , ECS), I0 @ ND0) => extractTerm(G *! ((I0 @ ND0) (I1 @ ND1) , ECS), I1 @ ND1) .
+    rl [extEquivSubst] : extractTerm(G *! ((I0 @ ND0) (I1 @ ND1) EC), I0 @ ND0) => extractTerm(G *! ((I0 @ ND0) (I1 @ ND1) EC), I1 @ ND1) .
+    rl [extEquivSubst] : extractTerm(G *! ((I0 @ ND0) (I1 @ ND1)), I0 @ ND0) => extractTerm(G *! ((I0 @ ND0) (I1 @ ND1)), I1 @ ND1) .
+    rl [extSystem] : extractSystem(G *! ECS, I @ sysD) => extractSystemAux(G *! ECS, I @ sysD, childrenOf(G, I @ sysD)) .
+    rl [extSystemAux] : extractSystemAux(G *! ECS, I @ sysD, null) => emptySys .
+    crl [extSystemAux] : extractSystemAux(G *! ECS, I @ sysD, NL) => R ; SY
+      if N ~ NL0 := NL /\ extractRule(G *! ECS, N) => R /\ extractSystemAux(G *! ECS, I @ sysD, NL0) => SY .
+    crl [extRule] : extractRule(G *! ECS, I @ anonRuleD) => T0 ==> T1
+      if N0 ~ N1 := childrenOf(G, I @ anonRuleD) /\ extractTerm(G *! ECS, N0) => T0 /\ extractTerm(G *! ECS, N1) => T1 .
+    crl [extRule] : extractRule(G *! ECS, I @ namedRuleD(Q)) => T0 =[ Q ]=> T1
+      if N0 ~ N1 := childrenOf(G, I @ namedRuleD(Q)) /\ extractTerm(G *! ECS, N0) => T0 /\ extractTerm(G *! ECS, N1) => T1 .
+    rl [extTerm] : extractTerm(G *! ECS, I @ varD(Q)) => var(Q) .
+    crl [extTerm] : extractTerm(G *! ECS, I @ operD(Q)) => oper(Q) ! TL
+      if extractTermList(G *! ECS, childrenOf(G, I @ operD(Q))) => TL .
+    rl [extTermList] : extractTermList(G *! ECS, null) => nil .
+    crl [extTermList] : extractTermList(G *! ECS, NL) => T , TL
+      if N ~ NL0 := NL /\ extractTerm(G *! ECS, N) => T /\ extractTermList(G *! ECS, NL0) => TL .
+endm

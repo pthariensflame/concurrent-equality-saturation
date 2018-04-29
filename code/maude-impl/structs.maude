@@ -117,9 +117,16 @@ fmod EPEG is
     op __ : EquivClass EquivClass -> EquivClasses [ctor assoc comm prec 38] .
     op _,_ : EquivClasses EquivClasses -> EquivClasses [ctor assoc comm prec 40] .
     op _*!_ : Graph EquivClasses -> EPeg [ctor prec 42] .
+    op childrenOf : Graph Node -> NodeList .
+    op childrenOfAt : Graph Node Nat -> NodeList .
     var N : Node .
     var EC : EquivClass .
     var ECS : EquivClasses .
     eq N N = N .
     eq EC , EC = EC .
+    eq childrenOf(I @ sysD through nothing to N ; G, I @ sysD) = N ~ childrenOf(G, I @ sysD) .
+    eq childrenOf(N through 0 to N0 ; G, N) = N0 ~ childrenOfAt(G, N, 1) .
+    eq childrenOf(G, N) = null [owise] .
+    eq childrenOfAt(N through K to N0 ; G, N, K) = N0 ~ childrenOfAt(G, N, K + 1) .
+    eq childrenOfAt(G, N, K) = null [owise] .
 endfm

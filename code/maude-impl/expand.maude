@@ -1,0 +1,21 @@
+in conv
+
+mod EPEG-EXPAND is
+    pr EPEG .
+    pr AST .
+    sort EPegPlus .
+    op !* : EPeg System -> EPegPlus [ctor prec 46] .
+    op epegPart : EPegPlus -> EPeg .
+    op equationsPart : EPegPlus -> System .
+    vars EP EP0 EP1 : EPeg .
+    vars S S0 S1 : System .
+    vars G G0 G1 : Graph .
+    vars ECS ECS0 ECS1 : EquivClasses .
+    vars EC EC0 EC1 : EquivClass .
+    vars N N0 N1 : Node .
+    vars ND ND0 ND1 : NodeData .
+    eq epegPart(EP !* S) = EP .
+    eq equationsPart(EP !* S) = S .
+    crl [interiorEquality] : (G ; ECS) => (G0 ; ECS0)
+      if  .
+endm

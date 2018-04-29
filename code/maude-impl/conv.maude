@@ -69,8 +69,6 @@ mod AST-CONVERSION-OUT is
     op null : -> NodeList [ctor] .
     op _~_ : NodeList NodeList -> NodeList [ctor assoc id: null prec 44] .
     op extract : EPeg -> System [frozen] .
-    op childrenOf : Graph Node -> NodeList .
-    op childrenOfAt : Graph Node Nat -> NodeList .
     var EP : EPeg .
     var G : Graph .
     var ECS : EquivClasses .
@@ -85,11 +83,6 @@ mod AST-CONVERSION-OUT is
     var TL : TermList .
     var Q : Qid .
     eq extract(EP) = extractSystem(EP, 0 @ sysD) .
-    eq childrenOf(I @ sysD through nothing to N ; G, I @ sysD) = N ~ childrenOf(G, I @ sysD) .
-    eq childrenOf(N through 0 to N0 ; G, N) = N0 ~ childrenOfAt(G, N, 1) .
-    eq childrenOf(G, N) = null [owise] .
-    eq childrenOfAt(N through K to N0 ; G, N, K) = N0 ~ childrenOfAt(G, N, K + 1) .
-    eq childrenOfAt(G, N, K) = null [owise] .
     rl [extEquivSubst] : extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) EC , ECS), I0 @ ND0) => extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) EC , ECS), I1 @ ND1) .
     rl [extEquivSubst] : extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) , ECS), I0 @ ND0) => extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) , ECS), I1 @ ND1) .
     rl [extEquivSubst] : extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) EC), I0 @ ND0) => extractSystem(G *! ((I0 @ ND0) (I1 @ ND1) EC), I1 @ ND1) .

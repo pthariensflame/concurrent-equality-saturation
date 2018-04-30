@@ -8,11 +8,11 @@ fmod AST-CONVERSION-IN is
     op graphPart : ConvReturn -> Graph .
     op nodePart : ConvReturn -> Node .
     op convert : System -> EPeg .
-    op addConv : System Graph -> ConvReturn .
-    op addConv : Rule Graph -> ConvReturn [ditto] .
-    op addConv : Var Graph -> ConvReturn .
-    op addConv : Term Graph -> ConvReturn [ditto] .
-    op addConvAux : Term Graph Nat -> ConvReturn .
+    op addConv : Nat System Graph -> ConvReturn .
+    op addConv : Nat Rule Graph -> ConvReturn [ditto] .
+    op addConv : Nat Var Graph -> ConvReturn .
+    op addConv : Nat Term Graph -> ConvReturn [ditto] .
+    op addConvAux : Nat Term Graph Nat -> ConvReturn .
     op trivClasses : Graph -> EquivClasses .
     vars N N0 N1 N2 : Node .
     vars ND0 ND1 : NodeData .
@@ -34,9 +34,6 @@ fmod AST-CONVERSION-IN is
     ceq convert(S) = G *! trivClasses(G) if G := graphPart(addConv(S, empty)) .
     eq addConv(emptySys, (I @ sysD through nothing to N ; G)) = (I @ sysD into N ; G) |%| I @ sysD .
     eq addConv(emptySys, empty) = empty |%| 0 @ sysD .
-    ceq addConv((R ; S), G) = addConv(S, G0)
-      if G0 |%| N := addConv(R, G) .
-    eq addConv((EQ ; S), G) = addConv(S, G) .
     ceq addConv((T0 ==> T1), (I @ sysD through nothing to N2 ; G)) = (G1 ; N through 0 to N0 ; N through 1 to N1 ; I @ sysD into N) |%| N
       if G0 |%| N0 := addConv(T0, (I @ sysD into N2 ; G)) /\ G1 |%| N1 := addConv(T1, G0) /\ N := nextId(G1) @ anonRuleD .
     ceq addConv((T0 ==> T1), empty) = (G1 ; N through 0 to N0 ; N through 1 to N1 ; 0 @ sysD into N) |%| N
@@ -50,6 +47,9 @@ fmod AST-CONVERSION-IN is
     ceq addConvAux((oper(Q) ! (T , TL)), G, K) = G1 ; N through K to N0 |%| N
       if G0 |%| N0 := addConv(T, G) /\ G1 |%| N := addConvAux((oper(Q) ! TL), G0, K + 1) .
     eq addConv(var(Q), G) = G |%| nextId(G) @ varD(Q) .
+    ceq addConv((R ; S), G) = addConv(S, G0)
+      if G0 |%| N := addConv(R, G) .
+    eq addConv((EQ ; S), G) = addConv(S, G) .
     ceq trivClasses(E) = N0 , N1
       if N0 through ED to N1 := E .
     ceq trivClasses(E ; G) = N0 , N1 , ECS
@@ -59,15 +59,11 @@ endfm
 mod AST-CONVERSION-OUT is
     pr AST .
     pr EPEG .
-    sorts NodeList .
-    subsorts Node < NodeList .
     op extractSystem : EPeg Node -> System [frozen] .
     op extractSystemAux : EPeg Node NodeList -> System [frozen] .
     op extractRule : EPeg Node -> Rule [frozen] .
     op extractTerm : EPeg Node -> Term [frozen] .
     op extractTermList : EPeg NodeList -> TermList [frozen] .
-    op null : -> NodeList [ctor] .
-    op _~_ : NodeList NodeList -> NodeList [ctor assoc id: null prec 44] .
     op extract : EPeg -> System [frozen] .
     var EP : EPeg .
     var G : Graph .

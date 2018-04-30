@@ -1,21 +1,55 @@
 in conv
 
 mod EPEG-EXPAND is
-    pr EPEG .
-    pr AST .
+    pr AST-CONVERSION-OUT .
     sort EPegPlus .
-    op !* : EPeg System -> EPegPlus [ctor prec 46] .
+    op _!*_ : EPeg System -> EPegPlus [ctor prec 46] .
     op epegPart : EPegPlus -> EPeg .
     op equationsPart : EPegPlus -> System .
     vars EP EP0 EP1 : EPeg .
     vars S S0 S1 : System .
+    vars EQ EQ0 EQ1 : Equation .
+    vars R R0 R1 : Rule .
+    vars T T0 T1 T2 T3 : Term .
     vars G G0 G1 : Graph .
     vars ECS ECS0 ECS1 : EquivClasses .
     vars EC EC0 EC1 : EquivClass .
-    vars N N0 N1 : Node .
+    vars N N0 N1 N2 N3 : Node .
     vars ND ND0 ND1 : NodeData .
+    vars Q Q0 Q1 : Qid .
+    vars I I0 I1 J J0 J1 K K0 K1 : Nat .
     eq epegPart(EP !* S) = EP .
     eq equationsPart(EP !* S) = S .
-    crl [interiorEquality] : (G ; ECS) => (G0 ; ECS0)
-      if  .
+    *** crl [interiorEquality] : (G *! N0 EC0 , ECS !* (T0 === T1) ; S) => (G *! N0 EC0 N1 EC1 , ECS !* (T0 === T1) ; S)
+    ***   if extractTerm((G *! N0 EC0 , ECS), N0) => T0 /\ addConv((G *! N0 EC0 , ECS), N1) => T1 .
+    rl [equalityCollapse] : (G *! N EC0 , N EC1 , ECS !* (T0 === T1) ; S) => (G *! N EC0 EC1 , ECS !* (T0 === T1) ; S) .
+    rl [equalityCollapse] : (G *! N , N EC1 , ECS !* (T0 === T1) ; S) => (G *! N EC1 , ECS !* (T0 === T1) ; S) .
+    rl [equalityCollapse] : (G *! N EC0 , N , ECS !* (T0 === T1) ; S) => (G *! N EC0 , ECS !* (T0 === T1) ; S) .
+    crl [ruleComposition] : (G *! N1 N2 EC0 , (I @ sysD) EC1 , ECS !* S) => (J @ sysD into J0 @ anonRuleD ; J0 @ anonRuleD through 0 to N0 ; J0 @ anonRuleD through 1 to N3 ; G *! N1 N2 EC0 , (J @ sysD) (I @ sysD) EC1 , ECS !* S)
+      if I0 @ anonRuleD through 0 to N0 ; I0 @ anonRuleD through 1 to N1 ; I1 @ anonRuleD through 0 to N2 ; I0 @ anonRuleD through 1 to N3 ; I @ sysD through nothing to I0 @ anonRuleD ; I @ sysD through nothing to I1 @ anonRuleD ; G0 := G /\ J := nextId(G) /\ J0 := J + 1 .
+    crl [ruleComposition] : (G *! N1 N2 , (I @ sysD) EC1 , ECS !* S) => (J @ sysD into J0 @ anonRuleD ; J0 @ anonRuleD through 0 to N0 ; J0 @ anonRuleD through 1 to N3 ; G *! N1 N2 , (J @ sysD) (I @ sysD) EC1 , ECS !* S)
+      if I0 @ anonRuleD through 0 to N0 ; I0 @ anonRuleD through 1 to N1 ; I1 @ anonRuleD through 0 to N2 ; I0 @ anonRuleD through 1 to N3 ; I @ sysD through nothing to I0 @ anonRuleD ; I @ sysD through nothing to I1 @ anonRuleD ; G0 := G /\ J := nextId(G) /\ J0 := J + 1 .
+    crl [ruleComposition] : (G *! N1 N2 EC0 , (I @ sysD) , ECS !* S) => (J @ sysD into J0 @ anonRuleD ; J0 @ anonRuleD through 0 to N0 ; J0 @ anonRuleD through 1 to N3 ; G *! N1 N2 EC0 , (J @ sysD) (I @ sysD) , ECS !* S)
+      if I0 @ anonRuleD through 0 to N0 ; I0 @ anonRuleD through 1 to N1 ; I1 @ anonRuleD through 0 to N2 ; I0 @ anonRuleD through 1 to N3 ; I @ sysD through nothing to I0 @ anonRuleD ; I @ sysD through nothing to I1 @ anonRuleD ; G0 := G /\ J := nextId(G) /\ J0 := J + 1 .
+    crl [ruleComposition] : (G *! N1 N2 , (I @ sysD) , ECS !* S) => (J @ sysD into J0 @ anonRuleD ; J0 @ anonRuleD through 0 to N0 ; J0 @ anonRuleD through 1 to N3 ; G *! N1 N2 , (J @ sysD) (I @ sysD) , ECS !* S)
+      if I0 @ anonRuleD through 0 to N0 ; I0 @ anonRuleD through 1 to N1 ; I1 @ anonRuleD through 0 to N2 ; I0 @ anonRuleD through 1 to N3 ; I @ sysD through nothing to I0 @ anonRuleD ; I @ sysD through nothing to I1 @ anonRuleD ; G0 := G /\ J := nextId(G) /\ J0 := J + 1 .
+    crl [ruleComposition] : (G *! N1 N2 EC0 , (I @ sysD) EC1 !* S) => (J @ sysD into J0 @ anonRuleD ; J0 @ anonRuleD through 0 to N0 ; J0 @ anonRuleD through 1 to N3 ; G *! N1 N2 EC0 , (J @ sysD) (I @ sysD) EC1 !* S)
+      if I0 @ anonRuleD through 0 to N0 ; I0 @ anonRuleD through 1 to N1 ; I1 @ anonRuleD through 0 to N2 ; I0 @ anonRuleD through 1 to N3 ; I @ sysD through nothing to I0 @ anonRuleD ; I @ sysD through nothing to I1 @ anonRuleD ; G0 := G /\ J := nextId(G) /\ J0 := J + 1 .
+    crl [ruleComposition] : (G *! N1 N2 , (I @ sysD) EC1 !* S) => (J @ sysD into J0 @ anonRuleD ; J0 @ anonRuleD through 0 to N0 ; J0 @ anonRuleD through 1 to N3 ; G *! N1 N2 , (J @ sysD) (I @ sysD) EC1 !* S)
+      if I0 @ anonRuleD through 0 to N0 ; I0 @ anonRuleD through 1 to N1 ; I1 @ anonRuleD through 0 to N2 ; I0 @ anonRuleD through 1 to N3 ; I @ sysD through nothing to I0 @ anonRuleD ; I @ sysD through nothing to I1 @ anonRuleD ; G0 := G /\ J := nextId(G) /\ J0 := J + 1 .
+    crl [ruleComposition] : (G *! N1 N2 EC0 , (I @ sysD) !* S) => (J @ sysD into J0 @ anonRuleD ; J0 @ anonRuleD through 0 to N0 ; J0 @ anonRuleD through 1 to N3 ; G *! N1 N2 EC0 , (J @ sysD) (I @ sysD) !* S)
+      if I0 @ anonRuleD through 0 to N0 ; I0 @ anonRuleD through 1 to N1 ; I1 @ anonRuleD through 0 to N2 ; I0 @ anonRuleD through 1 to N3 ; I @ sysD through nothing to I0 @ anonRuleD ; I @ sysD through nothing to I1 @ anonRuleD ; G0 := G /\ J := nextId(G) /\ J0 := J + 1 .
+    crl [ruleComposition] : (G *! N1 N2 , (I @ sysD) !* S) => (J @ sysD into J0 @ anonRuleD ; J0 @ anonRuleD through 0 to N0 ; J0 @ anonRuleD through 1 to N3 ; G *! N1 N2 , (J @ sysD) (I @ sysD) !* S)
+      if I0 @ anonRuleD through 0 to N0 ; I0 @ anonRuleD through 1 to N1 ; I1 @ anonRuleD through 0 to N2 ; I0 @ anonRuleD through 1 to N3 ; I @ sysD through nothing to I0 @ anonRuleD ; I @ sysD through nothing to I1 @ anonRuleD ; G0 := G /\ J := nextId(G) /\ J0 := J + 1 .
+endm
+
+mod MAIN is
+    pr AST-CONVERSION-IN .
+    pr EPEG-EXPAND .
+    op initialize : System -> EPegPlus .
+    op finalize : EPegPlus -> System .
+    var S : System .
+    var EPP : EPegPlus .
+    eq initialize(S) = convert(S) !* equationsOf(S) .
+    eq finalize(EPP) = extract(epegPart(EPP)) ; equationsPart(EPP) .
 endm

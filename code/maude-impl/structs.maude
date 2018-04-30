@@ -5,7 +5,7 @@ fmod AST is
     subsorts Var < Term < TermList .
     op emptySys : -> System [ctor] .
     op _;_ : System System -> System [ctor assoc comm id: emptySys prec 36] .
-    op _===_ : Term Term -> Equation [ctor prec 34] .
+    op _===_ : Term Term -> Equation [ctor comm prec 34] .
     op _==>_ : Term Term -> Rule [ctor prec 34] .
     op _=[_]=>_ : Term Qid Term -> Rule [ctor prec 34] .
     op nil : -> TermList [ctor] .
@@ -83,14 +83,12 @@ endfm
 
 fmod PEG-SPEC is
     pr NAT . pr QID .
-    sorts SystemD RuleD CompositionD OperationD VarD NodeData Nothing EdgeData .
-    subsorts SystemD RuleD CompositionD OperationD VarD < NodeData .
+    sorts SystemD RuleD OperationD VarD NodeData Nothing EdgeData .
+    subsorts SystemD RuleD OperationD VarD < NodeData .
     subsorts Nothing Nat < EdgeData .
     op sysD : -> SystemD [ctor] .
     op anonRuleD : -> RuleD [ctor] .
     op namedRuleD : Qid -> RuleD [ctor] .
-    op anonCompD : -> CompositionD [ctor] .
-    op namedCompD : Qid -> CompositionD [ctor] .
     op operD : Qid -> OperationD [ctor] .
     op varD : Qid -> OperationD [ctor] .
     op nothing : -> Nothing [ctor] .
@@ -112,16 +110,25 @@ endfm
 
 fmod EPEG is
     pr PEG .
-    sorts EPeg EquivClass EquivClasses .
+    sorts EPeg EquivClass EquivClasses NodeList .
     subsorts Node < EquivClass < EquivClasses .
+    subsorts Node < NodeList .
     op __ : EquivClass EquivClass -> EquivClasses [ctor assoc comm prec 38] .
     op _,_ : EquivClasses EquivClasses -> EquivClasses [ctor assoc comm prec 40] .
     op _*!_ : Graph EquivClasses -> EPeg [ctor prec 42] .
+    op null : -> NodeList [ctor] .
+    op _~_ : NodeList NodeList -> NodeList [ctor assoc id: null prec 44] .
     op childrenOf : Graph Node -> NodeList .
     op childrenOfAt : Graph Node Nat -> NodeList .
-    var N : Node .
-    var EC : EquivClass .
+    var EP : EPeg .
+    var G : Graph .
     var ECS : EquivClasses .
+    var EC : EquivClass .
+    vars I I0 I1 J J0 J1 K : Nat .
+    vars N N0 N1 : Node .
+    vars NL NL0 : NodeList .
+    vars ND ND0 ND1 : NodeData .
+    var Q : Qid .
     eq N N = N .
     eq EC , EC = EC .
     eq childrenOf(I @ sysD through nothing to N ; G, I @ sysD) = N ~ childrenOf(G, I @ sysD) .
